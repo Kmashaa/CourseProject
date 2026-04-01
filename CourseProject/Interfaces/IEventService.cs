@@ -8,9 +8,9 @@ namespace CourseProject.Interfaces
 
         List<Event> GetAllEvents();
 
-        void CreateEvent(Event newEvent); //TODO: через string
+        void CreateEvent(Event @event);
         
-        void UpdateEvent(Event updatedEvent); //TODO: через string
+        void UpdateEvent(Event @event);
 
         void DeleteEvent(int index);
 

@@ -22,14 +22,14 @@ namespace CourseProject.Services
             return _repository.GetById(id);
         }
 
-        public void CreateEvent(Event newEvent)
+        public void CreateEvent(Event @event)
         {
-            _repository.Create(newEvent);
+            _repository.Create(@event);
         }
 
-        public void UpdateEvent(Event updatedEvent)
+        public void UpdateEvent(Event @event)
         {
-            _repository.Update(updatedEvent);
+            _repository.Update(@event);
         }
 
         public void DeleteEvent(int id)

@@ -9,9 +9,9 @@ namespace CourseProject.Interfaces
 
         Event? GetById(int id);
 
-        void Create(Event newEvent);
+        void Create(Event @event);
 
-        void Update(Event updatedEvent);
+        void Update(Event @event);
 
         void Delete(int id);
     }
