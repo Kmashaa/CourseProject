@@ -13,15 +13,15 @@ if (builder.Environment.IsDevelopment())
         options.ValidateScopes = true;
         options.ValidateOnBuild = true;
     });
-
-    builder.Services.AddSwaggerGen(options => {
-        options.EnableAnnotations();
-        
-        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-        options.IncludeXmlComments(xmlPath);
-    });
 }
+
+builder.Services.AddSwaggerGen(options => {
+    options.EnableAnnotations();
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+});
 
 // Add services to the container.
 
@@ -35,14 +35,13 @@ builder.Services.AddApplication();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+app.MapOpenApi();
 
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
+
 
 app.UseHttpsRedirection();
 

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CourseProject.Controllers
 {
-    [Route("[controller]")]
+    [Route("events")]
     [ApiController]
     public class EventsController : ControllerBase
     {
@@ -59,7 +59,7 @@ namespace CourseProject.Controllers
         /// <returns>Created event</returns>
         /// <response code="201">Event created successfully</response>
         [HttpPost]
-        public IActionResult Create([FromForm] EventDto eventDto)
+        public IActionResult Create([FromBody] EventDto eventDto)
         {
             var @event = _eventDtoMapperService.DtoToEntitie(eventDto);
             _eventService.CreateEvent(@event);
@@ -77,7 +77,7 @@ namespace CourseProject.Controllers
 
 
         [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromForm] EventDto eventDto)
+        public IActionResult Update(int id, [FromBody] EventDto eventDto)
         {
             eventDto.Id = id;
             var @event = _eventDtoMapperService.DtoToEntitie(eventDto);
