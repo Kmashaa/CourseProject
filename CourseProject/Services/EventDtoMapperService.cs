@@ -6,7 +6,7 @@ namespace CourseProject.Services
 {
     public class EventDtoMapperService: IEventDtoMapperService
     {
-        public Event DtoToEntitie(EventDto eventDto)
+        public Event DtoToEntity(EventDto eventDto)
         {
             Event @event = new()
             {
@@ -19,7 +19,7 @@ namespace CourseProject.Services
             return @event;
         }
 
-        public EventDto EntitieToDto(Event @event)
+        public EventDto EntityToDto(Event @event)
         {
             EventDto eventDto = new()
             {
