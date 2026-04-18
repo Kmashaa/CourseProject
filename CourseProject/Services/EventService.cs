@@ -4,19 +4,22 @@ using CourseProject.Models;
 
 namespace CourseProject.Services
 {
-    public class EventService: IEventService
+    public class EventService : IEventService
     {
         private readonly IEventRepository _repository;
+        private readonly IEventDtoMapperService _eventDtoMapperService;
 
-        public EventService(IEventRepository repository)
+
+        public EventService(IEventRepository repository, IEventDtoMapperService eventDtoMapperService)
         {
             _repository = repository;
+            _eventDtoMapperService = eventDtoMapperService;
         }
 
-        public List<Event> GetEvents(EventFilter filter)
+        public PaginatedResult GetEvents(EventFilter filter)
         {
             var events = _repository.GetAll();
-            var filteredEvents= FilterEvents(events, filter);
+            var filteredEvents = FilterEvents(events, filter);
             return filteredEvents;
         }
 
@@ -40,19 +43,19 @@ namespace CourseProject.Services
             _repository.Delete(id);
         }
 
-        public List<Event> FilterEvents(List<Event> events, EventFilter filter)
+        public PaginatedResult FilterEvents(List<Event> events, EventFilter filter)
         {
             var filtered = events.AsEnumerable();
 
             if (!string.IsNullOrWhiteSpace(filter.Title))
             {
-                filtered = filtered.Where(e => e.Title != null && 
+                filtered = filtered.Where(e => e.Title != null &&
                                                e.Title.Contains(filter.Title, StringComparison.OrdinalIgnoreCase));
             }
 
             if (filter.From.HasValue)
             {
-                filtered = filtered.Where(e => e.StartAt>=filter.From.Value);
+                filtered = filtered.Where(e => e.StartAt >= filter.From.Value);
             }
 
             if (filter.To.HasValue)
@@ -60,7 +63,22 @@ namespace CourseProject.Services
                 filtered = filtered.Where(e => e.EndAt <= filter.To.Value);
             }
 
-            return filtered.ToList();
+            if (filter.Page != null && filter.PageSize != null)
+            {
+                filtered = filtered.OrderBy(o => o.Id)
+                    .Skip((filter.Page - 1) * filter.PageSize)
+                    .Take(filter.PageSize);
+            }
+
+            PaginatedResult result = new PaginatedResult()
+            {
+                TotalItems = events.Count(),
+                CurrentPage = filter.Page,
+                EventsDto = filtered.Select(o => _eventDtoMapperService.EntityToDto(o)).ToList(),
+                NumOfItemsOnCurrentPage = filtered.Count()
+            };
+
+            return result;
 
         }
 

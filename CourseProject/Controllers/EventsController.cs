@@ -28,8 +28,7 @@ namespace CourseProject.Controllers
         public IActionResult GetAll([FromQuery] EventFilter filter)
         {
             var events =_eventService.GetEvents(filter);
-            var eventsDto = events.Select(o => _eventDtoMapperService.EntityToDto(o)).ToList();
-            return Ok(eventsDto); //200 Ok
+            return Ok(events); //200 Ok
         }
 
         /// <summary>

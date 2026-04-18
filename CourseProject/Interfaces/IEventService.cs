@@ -7,7 +7,7 @@ namespace CourseProject.Interfaces
     {
         Event? GetEventById(int id);
 
-        List<Event> GetEvents(EventFilter filter);
+        PaginatedResult GetEvents(EventFilter filter);
 
         void CreateEvent(Event @event);
         
