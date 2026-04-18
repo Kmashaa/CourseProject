@@ -25,9 +25,9 @@ namespace CourseProject.Controllers
         /// <returns>List of all events</returns>
         /// <response code="200">Event list received successfully</response>
         [HttpGet]
-        public IActionResult GetAll()
+        public IActionResult GetAll([FromQuery] EventFilter filter)
         {
-            var events =_eventService.GetAllEvents();
+            var events =_eventService.GetEvents(filter);
             var eventsDto = events.Select(o => _eventDtoMapperService.EntitieToDto(o)).ToList();
             return Ok(eventsDto); //200 Ok
         }

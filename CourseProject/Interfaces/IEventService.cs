@@ -1,4 +1,5 @@
 ﻿using CourseProject.Entities;
+using CourseProject.Models;
 
 namespace CourseProject.Interfaces
 {
@@ -6,7 +7,7 @@ namespace CourseProject.Interfaces
     {
         Event? GetEventById(int id);
 
-        List<Event> GetAllEvents();
+        List<Event> GetEvents(EventFilter filter);
 
         void CreateEvent(Event @event);
         

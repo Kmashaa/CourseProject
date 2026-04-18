@@ -1,5 +1,6 @@
 ﻿using CourseProject.Entities;
 using CourseProject.Interfaces;
+using CourseProject.Models;
 
 namespace CourseProject.Services
 {
@@ -12,9 +13,11 @@ namespace CourseProject.Services
             _repository = repository;
         }
 
-        public List<Event> GetAllEvents()
+        public List<Event> GetEvents(EventFilter filter)
         {
-            return _repository.GetAll();
+            var events = _repository.GetAll();
+            var filteredEvents= FilterEvents(events, filter);
+            return filteredEvents;
         }
 
         public Event? GetEventById(int id)
@@ -35,6 +38,30 @@ namespace CourseProject.Services
         public void DeleteEvent(int id)
         {
             _repository.Delete(id);
+        }
+
+        public List<Event> FilterEvents(List<Event> events, EventFilter filter)
+        {
+            var filtered = events.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(filter.Title))
+            {
+                filtered = filtered.Where(e => e.Title != null && 
+                                               e.Title.Contains(filter.Title, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (filter.From.HasValue)
+            {
+                filtered = filtered.Where(e => e.StartAt>=filter.From.Value);
+            }
+
+            if (filter.To.HasValue)
+            {
+                filtered = filtered.Where(e => e.EndAt <= filter.To.Value);
+            }
+
+            return filtered.ToList();
+
         }
 
     }
