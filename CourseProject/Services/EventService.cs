@@ -63,19 +63,22 @@ namespace CourseProject.Services
                 filtered = filtered.Where(e => e.EndAt <= filter.To.Value);
             }
 
-            if (filter.Page != null && filter.PageSize != null)
-            {
-                filtered = filtered.OrderBy(o => o.Id)
+            var filteredList = filtered.ToList();
+            int totalItems = filteredList.Count;
+
+            var paginated = filteredList.OrderBy(o => o.Id)
                     .Skip((filter.Page - 1) * filter.PageSize)
-                    .Take(filter.PageSize);
-            }
+                    .Take(filter.PageSize)
+                    .Select(o => _eventDtoMapperService.EntityToDto(o))
+                    .ToList();
+
 
             PaginatedResult result = new PaginatedResult()
             {
-                TotalItems = events.Count(),
+                TotalItems = totalItems,
                 CurrentPage = filter.Page,
-                EventsDto = filtered.Select(o => _eventDtoMapperService.EntityToDto(o)).ToList(),
-                NumOfItemsOnCurrentPage = filtered.Count()
+                EventsDto = paginated,
+                NumOfItemsOnCurrentPage = paginated.Count
             };
 
             return result;
