@@ -15,10 +15,16 @@ namespace CourseProject.Services
             _repository = repository;
             _eventDtoMapperService = eventDtoMapperService;
         }
+        
+        public List<Event>? GetAllEvents()
+        {
+            var events = _repository.GetAll();
+            return events;
+        }
 
         public PaginatedResult GetEvents(EventFilter filter)
         {
-            var events = _repository.GetAll();
+            var events = GetAllEvents();
             var filteredEvents = FilterEvents(events, filter);
             return filteredEvents;
         }
