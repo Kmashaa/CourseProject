@@ -1,6 +1,8 @@
 ﻿using CourseProject.Entities;
 using CourseProject.Interfaces;
 using System.Diagnostics.Metrics;
+using CourseProject.Exceptions;
+
 namespace CourseProject.Data
 {
     public class EventRepository : IEventRepository
@@ -70,6 +72,10 @@ namespace CourseProject.Data
             if (index != -1)
             {
                 _events[index] = @event;
+            }
+            else
+            {
+                throw new EventNotFoundException();
             }
 
         }
