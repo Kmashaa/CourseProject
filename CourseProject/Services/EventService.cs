@@ -1,40 +1,113 @@
 ﻿using CourseProject.Entities;
+using CourseProject.Exceptions;
 using CourseProject.Interfaces;
+using CourseProject.Models;
 
 namespace CourseProject.Services
 {
-    public class EventService: IEventService
+    public class EventService : IEventService
     {
         private readonly IEventRepository _repository;
 
-        public EventService(IEventRepository repository)
+        public EventService(IEventRepository repository, IEventDtoMapperService eventDtoMapperService)
         {
             _repository = repository;
         }
-
-        public List<Event> GetAllEvents()
+        
+        public List<Event>? GetAllEvents()
         {
-            return _repository.GetAll();
+            var events = _repository.GetAll();
+            return events;
         }
 
-        public Event? GetEventById(int id)
+        public PaginatedResult GetEvents(EventFilter filter)
+        {
+            var events = GetAllEvents();
+            var filteredEvents = FilterEvents(events, filter);
+            return filteredEvents;
+        }
+
+        public Event? GetEventById(Guid id)
         {
             return _repository.GetById(id);
         }
 
-        public void CreateEvent(Event @event)
+        public Event CreateEvent(Event @event)
         {
-            _repository.Create(@event);
+            ValidateEvent(@event);
+            return _repository.Create(@event);
         }
 
-        public void UpdateEvent(Event @event)
+        public Event UpdateEvent(Event @event)
         {
-            _repository.Update(@event);
+            ValidateEvent(@event);
+            return _repository.Update(@event);
         }
 
-        public void DeleteEvent(int id)
+        public Guid DeleteEvent(Guid? id)
         {
-            _repository.Delete(id);
+            if (id == null)
+            {
+                throw new InvalidEventDataException();
+            }
+            return _repository.Delete((Guid)id);
+        }
+
+        public PaginatedResult FilterEvents(List<Event> events, EventFilter filter)
+        {
+            var filtered = events.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(filter.Title))
+            {
+                filtered = filtered.Where(e => e.Title != null &&
+                                               e.Title.Contains(filter.Title, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (filter.From.HasValue)
+            {
+                filtered = filtered.Where(e => e.StartAt >= filter.From.Value);
+            }
+
+            if (filter.To.HasValue)
+            {
+                filtered = filtered.Where(e => e.EndAt <= filter.To.Value);
+            }
+
+            var filteredList = filtered.ToList();
+            int totalItems = filteredList.Count;
+
+            var paginated = filteredList.OrderBy(o => o.StartAt)
+                    .Skip((filter.Page - 1) * filter.PageSize)
+                    .Take(filter.PageSize)
+                    .ToList();
+
+
+            PaginatedResult result = new PaginatedResult()
+            {
+                TotalItems = totalItems,
+                CurrentPage = filter.Page,
+                Events = paginated,
+                NumOfItemsOnCurrentPage = paginated.Count
+            };
+
+            return result;
+
+        }
+
+        private void ValidateEvent(Event? @event)
+        {
+            if (@event == null)
+            {
+                throw new InvalidEventDataException();
+            }
+            if (@event.StartAt >= @event.EndAt)
+            {
+                throw new InvalidEventDataException();
+            }
+            if (String.IsNullOrWhiteSpace(@event.Title))
+            {
+                throw new InvalidEventDataException();
+            }
         }
 
     }

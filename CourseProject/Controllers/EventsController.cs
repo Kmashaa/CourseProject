@@ -25,11 +25,17 @@ namespace CourseProject.Controllers
         /// <returns>List of all events</returns>
         /// <response code="200">Event list received successfully</response>
         [HttpGet]
-        public IActionResult GetAll()
+        public IActionResult GetAll([FromQuery] EventFilter filter)
         {
-            var events =_eventService.GetAllEvents();
-            var eventsDto = events.Select(o => _eventDtoMapperService.EntitieToDto(o)).ToList();
-            return Ok(eventsDto); //200 Ok
+            var events =_eventService.GetEvents(filter);
+            PaginatedResultDto eventsDto = new()
+            {
+                TotalItems = events.TotalItems,
+                CurrentPage = events.CurrentPage,
+                NumOfItemsOnCurrentPage = events.NumOfItemsOnCurrentPage,
+                EventsDto = events.Events.Select(o => _eventDtoMapperService.EntityToDto(o)).ToList()
+            };
+            return Ok(events); //200 Ok
         }
 
         /// <summary>
@@ -41,7 +47,7 @@ namespace CourseProject.Controllers
         /// <response code="404">Event not found</response>
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public IActionResult GetById(Guid id)
         {
             var @event = _eventService.GetEventById(id);
 
@@ -49,7 +55,7 @@ namespace CourseProject.Controllers
             {
                 return NotFound(); // 404 Not found
             }
-            var eventDto=_eventDtoMapperService.EntitieToDto(@event);
+            var eventDto=_eventDtoMapperService.EntityToDto(@event);
             return Ok(eventDto); // 200 Ok
         }
 
@@ -61,10 +67,10 @@ namespace CourseProject.Controllers
         [HttpPost]
         public IActionResult Create([FromBody] EventDto eventDto)
         {
-            var @event = _eventDtoMapperService.DtoToEntitie(eventDto);
+            var @event = _eventDtoMapperService.DtoToEntity(eventDto);
             _eventService.CreateEvent(@event);
 
-            return CreatedAtAction(nameof(GetById), new { id = @event.Id }, _eventDtoMapperService.EntitieToDto(@event)); // 201 Created
+            return CreatedAtAction(nameof(Create), new { id = @event.Id }, _eventDtoMapperService.EntityToDto(@event)); // 201 Created
         }
 
         /// <summary>
@@ -77,16 +83,10 @@ namespace CourseProject.Controllers
 
 
         [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] EventDto eventDto)
+        public IActionResult Update(Guid id, [FromBody] EventDto eventDto)
         {
             eventDto.Id = id;
-            var @event = _eventDtoMapperService.DtoToEntitie(eventDto);
-
-            var existing = _eventService.GetEventById(@event.Id);
-            if (existing == null)
-            {
-                return NotFound(); //404 Not found
-            }
+            var @event = _eventDtoMapperService.DtoToEntity(eventDto);
 
             _eventService.UpdateEvent(@event);
 
@@ -101,14 +101,8 @@ namespace CourseProject.Controllers
         /// <response code="404">Event not found</response>
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public IActionResult Delete(Guid id)
         {
-            var existing = _eventService.GetEventById(id);
-            if (existing == null)
-            {
-                return NotFound(); // 404 Not found
-            }
-
             _eventService.DeleteEvent(id);
             return NoContent(); // 204 No Content
         }
