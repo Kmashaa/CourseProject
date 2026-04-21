@@ -10,7 +10,7 @@ namespace CourseProject.Services
         {
             Event @event = new()
             {
-                Id = Convert.ToInt32(eventDto.Id),
+                Id = eventDto.Id,
                 Title = eventDto.Title,
                 Description = eventDto.Description,
                 StartAt = eventDto.StartAt,

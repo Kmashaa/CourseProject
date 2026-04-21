@@ -5,15 +5,19 @@ namespace CourseProject.Interfaces
 {
     public interface IEventService
     {
-        Event? GetEventById(int id);
+        List<Event>? GetAllEvents();
+
+        Event? GetEventById(Guid id);
 
         PaginatedResult GetEvents(EventFilter filter);
 
-        void CreateEvent(Event @event);
+        Event CreateEvent(Event @event);
         
-        void UpdateEvent(Event @event);
+        Event UpdateEvent(Event @event);
 
-        void DeleteEvent(int index);
+        Guid DeleteEvent(Guid? index);
+
+        public PaginatedResult FilterEvents(List<Event> events, EventFilter filter);
 
     }
 }

@@ -6,7 +6,7 @@ namespace CourseProject.Models
     public class EventDto : IValidatableObject
     {
         [SwaggerSchema(ReadOnly = true)]
-        public int? Id { get; set; }
+        public Guid Id { get; set; }
 
         [Required(ErrorMessage = "Title is required")]
         [SwaggerSchema("Title of event", Format = "string")]

@@ -59,8 +59,9 @@ namespace CourseProject.Extensions
         private static int MapStatusCode(Exception ex)
             => ex switch
             {
-                ValidationException ve => StatusCodes.Status400BadRequest,
-                EventNotFoundException enfe => StatusCodes.Status404NotFound,
+                ValidationException _ => StatusCodes.Status400BadRequest,
+                EventNotFoundException _ => StatusCodes.Status404NotFound,
+                InvalidEventDataException _ => StatusCodes.Status400BadRequest,
                 _ => StatusCodes.Status500InternalServerError
             };
     }

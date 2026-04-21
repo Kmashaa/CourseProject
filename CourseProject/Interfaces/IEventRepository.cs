@@ -7,12 +7,12 @@ namespace CourseProject.Interfaces
     {
         List<Event> GetAll();
 
-        Event? GetById(int id);
+        Event? GetById(Guid id);
 
-        void Create(Event @event);
+        Event Create(Event @event);
 
-        void Update(Event @event);
+        Event Update(Event @event);
 
-        void Delete(int id);
+        Guid Delete(Guid id);
     }
 }

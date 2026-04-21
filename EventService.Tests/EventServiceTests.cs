@@ -1,8 +1,7 @@
-﻿using CourseProject.Data;
-using CourseProject.Entities;
+﻿using CourseProject.Entities;
+using CourseProject.Exceptions;
 using CourseProject.Interfaces;
 using CourseProject.Models;
-using CourseProject.Services;
 using Moq;
 
 namespace EventService.Tests
@@ -27,8 +26,8 @@ namespace EventService.Tests
             // Arrange
             var expectedEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)}
                 };
 
             _repositoryMock.Setup(repo => repo.GetAll()).Returns(expectedEvents);
@@ -48,16 +47,16 @@ namespace EventService.Tests
             // Arrange
             var expectedEvent = new Event
             {
-                Id = 1,
+                Id = Guid.NewGuid(),
                 Title = "Test Event 1",
                 StartAt = new DateTime(2026, 4, 5, 0, 0, 0),
                 EndAt = new DateTime(2026, 4, 5, 1, 0, 0)
             };
 
-            _repositoryMock.Setup(repo => repo.GetById(1)).Returns(expectedEvent);
+            _repositoryMock.Setup(repo => repo.GetById(expectedEvent.Id)).Returns(expectedEvent);
 
             // Act
-            var result = _service.GetEventById(1);
+            var result = _service.GetEventById(expectedEvent.Id);
 
             // Assert
             Assert.NotNull(result);
@@ -69,10 +68,11 @@ namespace EventService.Tests
         public void GetEventById_NotExistedId_ReturnsNull()
         {
             // Arrange
-            _repositoryMock.Setup(repo => repo.GetById(999)).Returns((Event?)null);
+            var notExistedGuid = Guid.NewGuid();
+            _repositoryMock.Setup(repo => repo.GetById(notExistedGuid)).Returns((Event?)null);
 
             // Act
-            var result = _service.GetEventById(999);
+            var result = _service.GetEventById(notExistedGuid);
 
             // Assert
             Assert.Null(result);
@@ -84,85 +84,101 @@ namespace EventService.Tests
             // Arrange
             var newEvent = new Event
             {
-                Id = 1,
+                Id = Guid.NewGuid(),
                 Title = "Test Event 1",
                 StartAt = new DateTime(2026, 4, 5, 0, 0, 0),
                 EndAt = new DateTime(2026, 4, 5, 1, 0, 0)
             };
+            _repositoryMock.Setup(repo => repo.Create(newEvent)).Returns(newEvent);
 
             // Act
-            _service.CreateEvent(newEvent);
+            var result = _service.CreateEvent(newEvent);
 
             // Assert
+            Assert.Equal(newEvent, result);
             _repositoryMock.Verify(repo => repo.Create(It.IsAny<Event>()), Times.Once);
             _repositoryMock.Verify(repo => repo.Create(It.Is<Event>(e => e.Title == "Test Event 1")), Times.Once);
 
         }
 
         [Fact]
-        public void UpdateEvent_WithCorrectData_ShouldCallRepositoryUpdate()
+        public void CreateEvent_WithIncorrectData_ThrowsException()
+        {
+            // Arrange
+            var newEvent = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Test Event 1",
+                StartAt = new DateTime(2026, 4, 5, 1, 0, 0),
+                EndAt = new DateTime(2026, 4, 5, 0, 0, 0)
+            };
+
+            // Act Assert
+            var exception = Assert.Throws<InvalidEventDataException>(() => _service.CreateEvent(newEvent));
+        }
+
+        [Fact]
+        public void UpdateEvent_WithCorrectData_ReturnsUpdatedEvent()
         {
             // Arrange
             var eventToUpdate = new Event
             {
-                Id = 1,
+                Id = Guid.NewGuid(),
                 Title = "Test Event 1",
                 StartAt = new DateTime(2026, 4, 5, 0, 0, 0),
                 EndAt = new DateTime(2026, 4, 5, 1, 0, 0)
             };
+            _repositoryMock.Setup(repo => repo.Update(eventToUpdate)).Returns(eventToUpdate);
 
             // Act
-            _service.UpdateEvent(eventToUpdate);
+            var result = _service.UpdateEvent(eventToUpdate);
 
             // Assert
+            Assert.Equal(result, eventToUpdate);
             _repositoryMock.Verify(repo => repo.Update(It.Is<Event>(e => e.Title == "Test Event 1")), Times.Once);
             _repositoryMock.Verify(repo => repo.Update(eventToUpdate), Times.Once);
         }
 
         [Fact]
-        public void UpdateEvent_WithIncorrectData_ShouldCallRepositoryUpdat()
+        public void UpdateEvent_WithIncorrectData_ThrowsException()
         {
             // Arrange
             var eventToUpdate = new Event
             {
-                Id = -1,
+                Id = Guid.NewGuid(),
                 Title = "Test Event 1",
                 StartAt = new DateTime(2026, 4, 8, 0, 0, 0),
                 EndAt = new DateTime(2026, 4, 5, 1, 0, 0)
             };
 
-            // Act
-            _service.UpdateEvent(eventToUpdate);
 
-            // Assert
-            _repositoryMock.Verify(repo => repo.Update(It.Is<Event>(e => e.Title == "Test Event 1")), Times.Once);
-            _repositoryMock.Verify(repo => repo.Update(eventToUpdate), Times.Once);
+            // Act Assert
+            var exception = Assert.Throws<InvalidEventDataException>(() => _service.UpdateEvent(eventToUpdate));
         }
 
         [Fact]
-        public void DeleteEvent_WithCorrectId_ShouldCallRepositoryDelete()
+        public void DeleteEvent_WithCorrectId_ReturnsId()
         {
             // Arrange
-            int eventIdToDelete = 5;
+            Guid eventIdToDelete = Guid.NewGuid();
+            _repositoryMock.Setup(repo => repo.Delete(eventIdToDelete)).Returns(eventIdToDelete);
 
             // Act
-            _service.DeleteEvent(eventIdToDelete);
+            var result = _service.DeleteEvent(eventIdToDelete);
 
             // Assert
+            Assert.Equal(result, eventIdToDelete);
             _repositoryMock.Verify(repo => repo.Delete(eventIdToDelete), Times.Once);
         }
 
         [Fact]
-        public void DeleteEvent_WithIncorrectId_ShouldStillCallRepository()
+        public void DeleteEvent_WithIncorrectId_ThrowsException()
         {
             // Arrange
-            int invalidId = -1;
+            Guid? eventId = null;
 
-            // Act
-            _service.DeleteEvent(invalidId);
-
-            // Assert
-            _repositoryMock.Verify(repo => repo.Delete(invalidId), Times.Once);
+            // Act Assert
+            var exception = Assert.Throws<InvalidEventDataException>(() => _service.DeleteEvent(eventId));
         }
 
         [Fact]
@@ -176,29 +192,29 @@ namespace EventService.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
-                    new Event { Id = 3, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 4, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
-                    new Event { Id = 5, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 6, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
-                    new Event { Id = 7, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 8, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
-                    new Event { Id = 9, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 10, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
-                    new Event { Id = 11, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 12, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
-                    new Event { Id = 13, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 14, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
-                    new Event { Id = 15, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 16, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0)}
 
                 };
 
             _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
 
             _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description=src.Description, StartAt=src.StartAt, EndAt=src.EndAt });
+                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
 
             // Act
             var result = _service.GetEvents(filter);
@@ -206,8 +222,8 @@ namespace EventService.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(16, result.TotalItems);
-            Assert.Equal(10, result.EventsDto.Count);
-            Assert.All(result.EventsDto, dto => Assert.Contains(filter.Title, dto.Title, StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(10, result.Events.Count);
+            Assert.All(result.Events, dto => Assert.Contains(filter.Title, dto.Title, StringComparison.OrdinalIgnoreCase));
         }
 
         [Fact]
@@ -221,22 +237,22 @@ namespace EventService.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
-                    new Event { Id = 3, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
-                    new Event { Id = 4, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
-                    new Event { Id = 5, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
-                    new Event { Id = 6, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
-                    new Event { Id = 7, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
-                    new Event { Id = 8, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
-                    new Event { Id = 9, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
-                    new Event { Id = 10, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
-                    new Event { Id = 11, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
-                    new Event { Id = 12, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
-                    new Event { Id = 13, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
-                    new Event { Id = 14, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
-                    new Event { Id = 15, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
-                    new Event { Id = 16, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
 
                 };
 
@@ -251,9 +267,9 @@ namespace EventService.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(7, result.TotalItems);
-            Assert.Equal(7, result.EventsDto.Count);
-            Assert.DoesNotContain(result.EventsDto, x => x.Id == 1);
-            Assert.All(result.EventsDto, dto =>
+            Assert.Equal(7, result.Events.Count);
+            Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o=>o.Title== "Test Event 1")?.Id);
+            Assert.All(result.Events, dto =>
             {
                 // Находим исходное событие по Id, чтобы сверить дату
                 var originalEvent = allEvents.First(e => e.Id == dto.Id);
@@ -272,22 +288,22 @@ namespace EventService.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
-                    new Event { Id = 3, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
-                    new Event { Id = 4, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
-                    new Event { Id = 5, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
-                    new Event { Id = 6, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
-                    new Event { Id = 7, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
-                    new Event { Id = 8, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
-                    new Event { Id = 9, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
-                    new Event { Id = 10, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
-                    new Event { Id = 11, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
-                    new Event { Id = 12, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
-                    new Event { Id = 13, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
-                    new Event { Id = 14, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
-                    new Event { Id = 15, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
-                    new Event { Id = 16, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
 
                 };
 
@@ -302,9 +318,9 @@ namespace EventService.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(8, result.TotalItems);
-            Assert.Equal(8, result.EventsDto.Count);
-            Assert.DoesNotContain(result.EventsDto, x => x.Id == 16);
-            Assert.All(result.EventsDto, dto =>
+            Assert.Equal(8, result.Events.Count);
+            Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 16")?.Id);
+            Assert.All(result.Events, dto =>
             {
                 // Находим исходное событие по Id, чтобы сверить дату
                 var originalEvent = allEvents.First(e => e.Id == dto.Id);
@@ -322,22 +338,22 @@ namespace EventService.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
-                    new Event { Id = 3, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
-                    new Event { Id = 4, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
-                    new Event { Id = 5, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
-                    new Event { Id = 6, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
-                    new Event { Id = 7, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
-                    new Event { Id = 8, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
-                    new Event { Id = 9, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
-                    new Event { Id = 10, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
-                    new Event { Id = 11, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
-                    new Event { Id = 12, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
-                    new Event { Id = 13, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
-                    new Event { Id = 14, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
-                    new Event { Id = 15, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
-                    new Event { Id = 16, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
 
                 };
 
@@ -352,8 +368,8 @@ namespace EventService.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(16, result.TotalItems);
-            Assert.Equal(10, result.EventsDto.Count);
-            Assert.DoesNotContain(result.EventsDto, x => x.Id == 16);
+            Assert.Equal(10, result.Events.Count);
+            Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 16")?.Id);
         }
 
         [Fact]
@@ -362,27 +378,28 @@ namespace EventService.Tests
             // Arrange
             var filter = new EventFilter
             {
-                Page=2
+                Page = 2
             };
+
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
-                    new Event { Id = 3, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
-                    new Event { Id = 4, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
-                    new Event { Id = 5, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
-                    new Event { Id = 6, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
-                    new Event { Id = 7, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
-                    new Event { Id = 8, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
-                    new Event { Id = 9, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
-                    new Event { Id = 10, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
-                    new Event { Id = 11, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
-                    new Event { Id = 12, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
-                    new Event { Id = 13, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
-                    new Event { Id = 14, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
-                    new Event { Id = 15, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
-                    new Event { Id = 16, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
 
                 };
 
@@ -397,8 +414,8 @@ namespace EventService.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(16, result.TotalItems);
-            Assert.Equal(6, result.EventsDto.Count);
-            Assert.Contains(result.EventsDto, x => x.Id == 16);
+            Assert.Equal(6, result.Events.Count);
+            Assert.Contains(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 16")?.Id);
         }
 
         [Fact]
@@ -412,22 +429,22 @@ namespace EventService.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
-                    new Event { Id = 3, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
-                    new Event { Id = 4, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
-                    new Event { Id = 5, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
-                    new Event { Id = 6, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
-                    new Event { Id = 7, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
-                    new Event { Id = 8, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
-                    new Event { Id = 9, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
-                    new Event { Id = 10, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
-                    new Event { Id = 11, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
-                    new Event { Id = 12, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
-                    new Event { Id = 13, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
-                    new Event { Id = 14, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
-                    new Event { Id = 15, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
-                    new Event { Id = 16, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
 
                 };
 
@@ -442,9 +459,9 @@ namespace EventService.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(16, result.TotalItems);
-            Assert.Equal(2, result.EventsDto.Count);
-            Assert.Contains(result.EventsDto, x => x.Id == 2);
-            Assert.DoesNotContain(result.EventsDto, x => x.Id == 3);
+            Assert.Equal(2, result.Events.Count);
+            Assert.Contains(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 2")?.Id);
+            Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 3")?.Id);
         }
 
         [Fact]
@@ -453,28 +470,28 @@ namespace EventService.Tests
             // Arrange
             var filter = new EventFilter
             {
-                Page=2,
+                Page = 2,
                 PageSize = 2
             };
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
-                    new Event { Id = 3, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
-                    new Event { Id = 4, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
-                    new Event { Id = 5, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
-                    new Event { Id = 6, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
-                    new Event { Id = 7, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
-                    new Event { Id = 8, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
-                    new Event { Id = 9, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
-                    new Event { Id = 10, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
-                    new Event { Id = 11, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
-                    new Event { Id = 12, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
-                    new Event { Id = 13, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
-                    new Event { Id = 14, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
-                    new Event { Id = 15, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
-                    new Event { Id = 16, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
 
                 };
 
@@ -489,9 +506,9 @@ namespace EventService.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(16, result.TotalItems);
-            Assert.Equal(2, result.EventsDto.Count);
-            Assert.Contains(result.EventsDto, x => x.Id == 3);
-            Assert.DoesNotContain(result.EventsDto, x => x.Id == 2);
+            Assert.Equal(2, result.Events.Count);
+            Assert.Contains(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 3")?.Id);
+            Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 2")?.Id);
         }
 
         [Fact]
@@ -500,29 +517,29 @@ namespace EventService.Tests
             // Arrange
             var filter = new EventFilter
             {
-                Title="4",
+                Title = "4",
                 Page = 2,
-                PageSize = 2
+                PageSize = 1
             };
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = 1, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
-                    new Event { Id = 2, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
-                    new Event { Id = 3, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
-                    new Event { Id = 4, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
-                    new Event { Id = 5, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
-                    new Event { Id = 6, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
-                    new Event { Id = 7, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
-                    new Event { Id = 8, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
-                    new Event { Id = 9, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
-                    new Event { Id = 10, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
-                    new Event { Id = 11, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
-                    new Event { Id = 12, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
-                    new Event { Id = 13, Title = "Test Event 1", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
-                    new Event { Id = 14, Title = "Test Event 2", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
-                    new Event { Id = 15, Title = "Test Event 3", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
-                    new Event { Id = 16, Title = "Test Event 4", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0)},
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0) },
+                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0)}
 
                 };
 
@@ -536,11 +553,10 @@ namespace EventService.Tests
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(4, result.TotalItems);
-            Assert.Equal(2, result.EventsDto.Count);
-            Assert.Contains(result.EventsDto, x => x.Id == 12);
-            Assert.Contains(result.EventsDto, x => x.Id == 16);
-            Assert.DoesNotContain(result.EventsDto, x => x.Id == 4);
+            Assert.Equal(2, result.TotalItems);
+            Assert.Equal(1, result.Events.Count);
+            Assert.Contains(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 14")?.Id);
+            Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 4")?.Id);
         }
     }
 }

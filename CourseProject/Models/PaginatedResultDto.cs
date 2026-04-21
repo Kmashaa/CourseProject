@@ -1,6 +1,6 @@
 ﻿namespace CourseProject.Models
 {
-    public class PaginatedResult
+    public class PaginatedResultDto
     {
         public int TotalItems { get; set; }
 

@@ -1,4 +1,5 @@
 ﻿using CourseProject.Entities;
+using CourseProject.Exceptions;
 using CourseProject.Interfaces;
 using CourseProject.Models;
 
@@ -7,13 +8,10 @@ namespace CourseProject.Services
     public class EventService : IEventService
     {
         private readonly IEventRepository _repository;
-        private readonly IEventDtoMapperService _eventDtoMapperService;
-
 
         public EventService(IEventRepository repository, IEventDtoMapperService eventDtoMapperService)
         {
             _repository = repository;
-            _eventDtoMapperService = eventDtoMapperService;
         }
         
         public List<Event>? GetAllEvents()
@@ -29,24 +27,30 @@ namespace CourseProject.Services
             return filteredEvents;
         }
 
-        public Event? GetEventById(int id)
+        public Event? GetEventById(Guid id)
         {
             return _repository.GetById(id);
         }
 
-        public void CreateEvent(Event @event)
+        public Event CreateEvent(Event @event)
         {
-            _repository.Create(@event);
+            ValidateEvent(@event);
+            return _repository.Create(@event);
         }
 
-        public void UpdateEvent(Event @event)
+        public Event UpdateEvent(Event @event)
         {
-            _repository.Update(@event);
+            ValidateEvent(@event);
+            return _repository.Update(@event);
         }
 
-        public void DeleteEvent(int id)
+        public Guid DeleteEvent(Guid? id)
         {
-            _repository.Delete(id);
+            if (id == null)
+            {
+                throw new InvalidEventDataException();
+            }
+            return _repository.Delete((Guid)id);
         }
 
         public PaginatedResult FilterEvents(List<Event> events, EventFilter filter)
@@ -72,10 +76,9 @@ namespace CourseProject.Services
             var filteredList = filtered.ToList();
             int totalItems = filteredList.Count;
 
-            var paginated = filteredList.OrderBy(o => o.Id)
+            var paginated = filteredList.OrderBy(o => o.StartAt)
                     .Skip((filter.Page - 1) * filter.PageSize)
                     .Take(filter.PageSize)
-                    .Select(o => _eventDtoMapperService.EntityToDto(o))
                     .ToList();
 
 
@@ -83,12 +86,28 @@ namespace CourseProject.Services
             {
                 TotalItems = totalItems,
                 CurrentPage = filter.Page,
-                EventsDto = paginated,
+                Events = paginated,
                 NumOfItemsOnCurrentPage = paginated.Count
             };
 
             return result;
 
+        }
+
+        private void ValidateEvent(Event? @event)
+        {
+            if (@event == null)
+            {
+                throw new InvalidEventDataException();
+            }
+            if (@event.StartAt >= @event.EndAt)
+            {
+                throw new InvalidEventDataException();
+            }
+            if (String.IsNullOrWhiteSpace(@event.Title))
+            {
+                throw new InvalidEventDataException();
+            }
         }
 
     }

@@ -15,7 +15,7 @@ namespace CourseProject.Data
             _events.AddRange(
                 new Event
                 {
-                    Id = counter++,
+                    Id = Guid.NewGuid(),
                     Title = "Концерт",
                     Description = "Концерт популярного певца",
                     StartAt = new DateTime(2026, 9, 1, 18, 0, 0),
@@ -24,7 +24,7 @@ namespace CourseProject.Data
                 },
                 new Event
                 {
-                    Id = counter++,
+                    Id = Guid.NewGuid(),
                     Title = "Шоу",
                     Description = "Гастроли популярного шоу",
                     StartAt = new DateTime(2026, 9, 14, 19, 0, 0),
@@ -32,7 +32,7 @@ namespace CourseProject.Data
                 },
                 new Event
                 {
-                    Id = counter++,
+                    Id = Guid.NewGuid(),
                     Title = "Stand Up",
                     Description = "Stand Up ТНТ",
                     StartAt = new DateTime(2026, 9, 2, 18, 0, 0),
@@ -41,7 +41,7 @@ namespace CourseProject.Data
                 },
                 new Event
                 {
-                    Id = counter++,
+                    Id = Guid.NewGuid(),
                     Title = "Мероприятие",
                     Description = "Какое-то мероприятие",
                     StartAt = new DateTime(2026, 9, 25, 19, 0, 0),
@@ -55,23 +55,25 @@ namespace CourseProject.Data
             return _events;
         }
 
-        public Event? GetById(int id)
+        public Event? GetById(Guid id)
         {
             return _events.FirstOrDefault(o => o.Id == id);
         }
 
-        public void Create(Event @event)
+        public Event Create(Event @event)
         {
-            @event.Id=counter++;
+            @event.Id = Guid.NewGuid();
             _events.Add(@event);
+            return @event;
         }
 
-        public void Update(Event @event)
+        public Event Update(Event @event)
         {
             var index = _events.FindIndex(o => o.Id == @event.Id);
             if (index != -1)
             {
                 _events[index] = @event;
+                return _events[index];
             }
             else
             {
@@ -80,13 +82,18 @@ namespace CourseProject.Data
 
         }
 
-        public void Delete(int id)
+        public Guid Delete(Guid id)
         {
             var eventFromList = _events.FirstOrDefault(o => o.Id == id);
 
             if (eventFromList != null)
             {
                 _events.Remove(eventFromList);
+                return id;
+            }
+            else
+            {
+                throw new EventNotFoundException();
             }
         }
 
