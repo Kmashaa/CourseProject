@@ -157,17 +157,17 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void DeleteEvent_WithCorrectId_ReturnsId()
+        public void DeleteEvent_WithCorrectId_DoesntThrowException()
         {
             // Arrange
             Guid eventIdToDelete = Guid.NewGuid();
-            _repositoryMock.Setup(repo => repo.Delete(eventIdToDelete)).Returns(eventIdToDelete);
+            _repositoryMock.Setup(repo => repo.Delete(eventIdToDelete)).Returns(true);
 
             // Act
-            var result = _service.DeleteEvent(eventIdToDelete);
+            var exception = Record.Exception(() => _service.DeleteEvent(eventIdToDelete));
 
             // Assert
-            Assert.Equal(result, eventIdToDelete);
+            Assert.Null(exception);
             _repositoryMock.Verify(repo => repo.Delete(eventIdToDelete), Times.Once);
         }
 
