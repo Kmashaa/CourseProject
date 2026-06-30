@@ -6,8 +6,8 @@ namespace CourseProject.Interfaces
 {
     public interface IEventDtoMapperService
     {
-        Event DtoToEntitie(EventDto eventDto);
+        Event DtoToEntity(EventDto eventDto);
 
-        EventDto EntitieToDto(Event @event);
+        EventDto EntityToDto(Event @event);
     }
 }

@@ -35,7 +35,7 @@ builder.Services.AddApplication();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.MapOpenApi();
 
 app.UseSwagger();
