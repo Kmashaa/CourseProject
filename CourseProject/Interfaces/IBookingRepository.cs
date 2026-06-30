@@ -4,15 +4,15 @@ namespace CourseProject.Interfaces
 {
     public interface IBookingRepository
     {
-        List<Booking> GetAll();
+        Task<List<Booking>> GetAllAsync();
 
-        Booking? GetById(Guid id);
+        Task<Booking?> GetByIdAsync(Guid id);
 
-        Booking Create(Booking booking);
+        Task<Booking> CreateAsync(Guid eventId);
 
-        Booking? Update(Booking booking);
+        Task<Booking?> UpdateAsync(Booking booking);
 
-        bool Delete(Guid id);
+        Task<bool> DeleteAsync(Guid id);
 
     }
 }

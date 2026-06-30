@@ -11,50 +11,53 @@ namespace CourseProject.Data
         {
         }
 
-        public List<Booking> GetAll()
+        public Task<List<Booking>> GetAllAsync()
         {
-            return _bookings;
+            return Task.FromResult(_bookings);
         }
 
-        public Booking? GetById(Guid id)
+        public Task<Booking?> GetByIdAsync(Guid id)
         {
-            return _bookings.FirstOrDefault(o => o.Id == id);
+            return Task.FromResult(_bookings.FirstOrDefault(o => o.Id == id));
         }
 
-        public Booking Create(Booking booking)
+        public Task<Booking> CreateAsync(Guid eventId)
         {
-            booking.Id = Guid.NewGuid();
-            booking.Status = BookingStatus.Pending;
-            booking.CreatedAt = DateTime.Now;
+            Booking booking = new()
+            {
+                Id = Guid.NewGuid(),
+                EventId = eventId,
+                Status = BookingStatus.Pending,
+                CreatedAt = DateTime.Now
+            };
 
             _bookings.Add(booking);
-            return booking;
+            return Task.FromResult(booking);
         }
 
-        public Booking? Update(Booking booking)
+        public Task<Booking?> UpdateAsync(Booking booking)
         {
             var index = _bookings.FindIndex(o => o.Id == booking.Id);
             if (index != -1)
             {
                 _bookings[index] = booking;
-                return _bookings[index];
+                return Task.FromResult(_bookings[index]);
             }
 
-            return null;
-
+            return Task.FromResult<Booking?>(null);
         }
 
-        public bool Delete(Guid id)
+        public Task<bool> DeleteAsync(Guid id)
         {
             var eventFromList = _bookings.FirstOrDefault(o => o.Id == id);
 
             if (eventFromList != null)
             {
                 _bookings.Remove(eventFromList);
-                return true;
+                return Task.FromResult(true);
             }
 
-            return false;
+            return Task.FromResult(false);
         }
     }
 }
