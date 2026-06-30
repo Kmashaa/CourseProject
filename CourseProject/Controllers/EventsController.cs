@@ -11,12 +11,18 @@ namespace CourseProject.Controllers
     public class EventsController : ControllerBase
     {
         private readonly IEventService _eventService;
+        private readonly IBookingService _bookingService;
         private readonly IEventDtoMapperService _eventDtoMapperService;
+        private readonly IBookingDtoMapperService _bookingDtoMapperService;
 
-        public EventsController(IEventService eventService, IEventDtoMapperService eventDtoMapperService)
+
+        public EventsController(IEventService eventService, IBookingService bookingService, IEventDtoMapperService eventDtoMapperService, IBookingDtoMapperService bookingDtoMapperService)
         {
             _eventService = eventService;
+            _bookingService = bookingService;
             _eventDtoMapperService = eventDtoMapperService;
+            _bookingDtoMapperService = bookingDtoMapperService;
+
         }
 
         /// <summary>
@@ -70,7 +76,7 @@ namespace CourseProject.Controllers
             var @event = _eventDtoMapperService.DtoToEntity(eventDto);
             _eventService.CreateEvent(@event);
 
-            return CreatedAtAction(nameof(Create), new { id = @event.Id }, _eventDtoMapperService.EntityToDto(@event)); // 201 Created
+            return CreatedAtAction(nameof(GetById), new { id = @event.Id }, _eventDtoMapperService.EntityToDto(@event)); // 201 Created
         }
 
         /// <summary>
@@ -105,6 +111,26 @@ namespace CourseProject.Controllers
         {
             _eventService.DeleteEvent(id);
             return NoContent(); // 204 No Content
+        }
+
+        /// <summary>
+        /// Book event
+        /// </summary>
+        /// <returns>Booking detailst</returns>
+        /// <response code="202">Bookings was accepted successfully</response>
+        /// <response code="404">Event was not found</response>
+        [HttpPost("{id}/book")]
+        public async Task<IActionResult> BookEvent(Guid id)
+        {
+            var @event = _eventService.GetEventById(id);
+
+            if (@event == null)
+            {
+                return NotFound(); // 404 Not found
+            }
+
+            var bookingDto = _bookingDtoMapperService.EntityToDto(await _bookingService.CreateBookingAsync(id));
+            return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingDto.Id }, bookingDto);
         }
     }
 }

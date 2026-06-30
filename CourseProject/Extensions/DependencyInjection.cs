@@ -19,7 +19,8 @@ namespace CourseProject.Extensions
             services.AddScoped<IEventService, EventService>();
             services.AddScoped<IBookingService, BookingService>();
             services.AddSingleton<IEventDtoMapperService, EventDtoMapperService>();
-
+            services.AddSingleton<IBookingDtoMapperService, BookingDtoMapperService>();
+            
             return services;
 
         }
