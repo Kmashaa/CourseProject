@@ -15,9 +15,9 @@ namespace CourseProject.Interfaces
         
         Event UpdateEvent(Event @event);
 
-        Guid DeleteEvent(Guid? index);
+        void DeleteEvent(Guid? index);
 
-        public PaginatedResult FilterEvents(List<Event> events, EventFilter filter);
+        PaginatedResult FilterEvents(List<Event> events, EventFilter filter);
 
     }
 }

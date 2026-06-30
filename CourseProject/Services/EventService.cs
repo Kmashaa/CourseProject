@@ -41,16 +41,29 @@ namespace CourseProject.Services
         public Event UpdateEvent(Event @event)
         {
             ValidateEvent(@event);
-            return _repository.Update(@event);
+
+            var updated = _repository.Update(@event);
+            if (updated == null)
+            {
+                throw new EventNotFoundException();
+            }
+
+            return updated;
         }
 
-        public Guid DeleteEvent(Guid? id)
+        public void DeleteEvent(Guid? id)
         {
             if (id == null)
             {
                 throw new InvalidEventDataException();
             }
-            return _repository.Delete((Guid)id);
+
+            bool deleted = _repository.Delete((Guid)id);
+
+            if (!deleted)
+            {
+                throw new EventNotFoundException();
+            }
         }
 
         public PaginatedResult FilterEvents(List<Event> events, EventFilter filter)

@@ -11,8 +11,8 @@ namespace CourseProject.Interfaces
 
         Event Create(Event @event);
 
-        Event Update(Event @event);
+        Event? Update(Event @event);
 
-        Guid Delete(Guid id);
+        bool Delete(Guid id);
     }
 }

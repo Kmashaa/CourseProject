@@ -67,7 +67,7 @@ namespace CourseProject.Data
             return @event;
         }
 
-        public Event Update(Event @event)
+        public Event? Update(Event @event)
         {
             var index = _events.FindIndex(o => o.Id == @event.Id);
             if (index != -1)
@@ -75,26 +75,22 @@ namespace CourseProject.Data
                 _events[index] = @event;
                 return _events[index];
             }
-            else
-            {
-                throw new EventNotFoundException();
-            }
+
+            return null;
 
         }
 
-        public Guid Delete(Guid id)
+        public bool Delete(Guid id)
         {
             var eventFromList = _events.FirstOrDefault(o => o.Id == id);
 
             if (eventFromList != null)
             {
                 _events.Remove(eventFromList);
-                return id;
+                return true;
             }
-            else
-            {
-                throw new EventNotFoundException();
-            }
+            
+            return false;
         }
 
     }
