@@ -14,7 +14,7 @@
     ```
 3. Перейдите в нужную ветку
     ```
-	git switch sprint-2
+	git switch sprint-3
     ```
 
 4. Запустите тесты
@@ -40,6 +40,7 @@ HTTP:
 	HTTP: http://localhost:5030/swagger/index.html
 
 ## Описание API
+### Event:
 	GET /events — получить список событий с поддержкой фильтрации и пагинации.
 		Параметры (query):
 		Title (string, optional) — поиск по названию (частичное совпадение, без учета регистра).
@@ -51,7 +52,43 @@ HTTP:
 	POST /events — создать событие;
 	PUT /events/{id} — обновить событие целиком;
 	DELETE /events/{id} — удалить событие;
+	POST /events/{id}/book – бронирование собятия;
 
+### Booking:
+	GET /bookings/{id} – получение информации о бронировании
+
+## Описание моделей
+```
+    public class Booking
+    {
+        public required Guid Id { get; set; } //id бронирования
+
+        public required Guid EventId { get; set; } //id события
+
+        public required BookingStatus Status { get; set; } //статус бронирования
+
+        public required DateTime CreatedAt { get; set; } //время создания заявки на бронирование
+
+        public DateTime? ProcessedAt { get; set; } //время подтверждения заявки на бронирование
+    }
+
+    public enum BookingStatus
+    {
+        Pending = 1, //в ожидании обработки
+        Confirmed = 2, //подтверждено
+        Rejected = 3 //отклонено
+    }
+```
+
+## Описание логики фоновой обработки заявок
+	Заявки, при создании, попадают в хранилище со статусом Pending. Фоновый обработчик ходит туда каждые 2 секунды и получает все заявки со статусом Pending. Обрабатывает их ("обращение в стороннюю систему" в течение 5 секунд, присвоение статуса Confirmed, присвоение даты и времени обработки заявки, обновление заявки в хранилище).
+
+## Пример сценария использования
+Пользователь создает событие через POST /events;
+Создает бронь через POST /events/{id}/book и получает Location, по которому может следить за статусом своей заявки;
+Пользователь сразу же запрашивает информацию о своей заявке GET /bookings/{id} и получает статус Pending;
+Ожидает несколько секунд и повторяет запрос — статус изменился на Confirmed или Rejected.
+	
 ## Архитектура CourseProject
   Entities: Доменные сущности
 
@@ -69,10 +106,11 @@ HTTP:
 
   Extensions: Глобальные расширения
 
+
 ## Архитектура EventService.Tests
 EventServiceTests.cs: тесты для сервиса EventService
 
-  Extensions: Методы расширения для конфигурации проекта
+BookingServiceTests.cs: тесты для сервиса BookingService
 
 
 ## Обработка ошибок
