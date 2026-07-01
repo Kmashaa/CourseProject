@@ -1,4 +1,5 @@
 ﻿using CourseProject.Entities;
+using CourseProject.Exceptions;
 using CourseProject.Interfaces;
 using CourseProject.Models;
 using CourseProject.Services;
@@ -122,15 +123,15 @@ namespace CourseProject.Controllers
         [HttpPost("{id}/book")]
         public async Task<IActionResult> BookEvent(Guid id)
         {
-            var @event = _eventService.GetEventById(id);
-
-            if (@event == null)
+            try
             {
-                return NotFound(); // 404 Not found
+                var bookingDto = _bookingDtoMapperService.EntityToDto(await _bookingService.CreateBookingAsync(id));
+                return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingDto.Id }, bookingDto);
             }
-
-            var bookingDto = _bookingDtoMapperService.EntityToDto(await _bookingService.CreateBookingAsync(id));
-            return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingDto.Id }, bookingDto);
+            catch (EventNotFoundException ex)
+            {
+                return NotFound();
+            }
         }
     }
 }

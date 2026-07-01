@@ -7,10 +7,12 @@ namespace CourseProject.Services
     public class BookingService : IBookingService
     {
         private readonly IBookingRepository _repository;
+        private readonly IEventService _eventService;
 
-        public BookingService(IBookingRepository repository)
+        public BookingService(IBookingRepository repository, IEventService eventService)
         {
             _repository = repository;
+            _eventService = eventService;
         }
 
 
@@ -19,6 +21,13 @@ namespace CourseProject.Services
             if (eventId == null)
             {
                 throw new InvalidEventDataException();
+            }
+
+            var @event = _eventService.GetEventById((Guid)eventId);
+
+            if (@event == null)
+            {
+                throw new EventNotFoundException();
             }
 
             return await _repository.CreateAsync((Guid)eventId);
