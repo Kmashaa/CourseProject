@@ -20,7 +20,7 @@ namespace CourseProject.Extensions
             services.AddScoped<IBookingService, BookingService>();
             services.AddSingleton<IEventDtoMapperService, EventDtoMapperService>();
             services.AddSingleton<IBookingDtoMapperService, BookingDtoMapperService>();
-            
+            services.AddHostedService<BookingProcessingService>();
             return services;
 
         }
