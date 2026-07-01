@@ -14,7 +14,7 @@
     ```
 3. Перейдите в нужную ветку
     ```
-	git switch sprint-2
+	git switch sprint-3
     ```
 
 4. Запустите тесты
