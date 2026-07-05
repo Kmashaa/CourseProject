@@ -14,7 +14,8 @@ namespace CourseProject.Services
                 Title = eventDto.Title,
                 Description = eventDto.Description,
                 StartAt = eventDto.StartAt,
-                EndAt = eventDto.EndAt
+                EndAt = eventDto.EndAt,
+                TotalSeats=(int)eventDto.TotalSeats
             };
             return @event;
         }
@@ -27,7 +28,9 @@ namespace CourseProject.Services
                 Title = @event.Title,
                 Description = @event.Description,
                 StartAt = @event.StartAt,
-                EndAt = @event.EndAt
+                EndAt = @event.EndAt,
+                TotalSeats=@event.TotalSeats,
+                AvailableSeats=@event.AvailableSeats
             };
             return eventDto;
         }

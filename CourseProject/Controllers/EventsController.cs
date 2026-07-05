@@ -42,7 +42,7 @@ namespace CourseProject.Controllers
                 NumOfItemsOnCurrentPage = events.NumOfItemsOnCurrentPage,
                 EventsDto = events.Events.Select(o => _eventDtoMapperService.EntityToDto(o)).ToList()
             };
-            return Ok(events); //200 Ok
+            return Ok(eventsDto); //200 Ok
         }
 
         /// <summary>

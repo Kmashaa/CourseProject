@@ -35,6 +35,7 @@ namespace CourseProject.Services
         public Event CreateEvent(Event @event)
         {
             ValidateEvent(@event);
+            @event.AvailableSeats = @event.TotalSeats;
             return _repository.Create(@event);
         }
 
@@ -118,6 +119,10 @@ namespace CourseProject.Services
                 throw new InvalidEventDataException();
             }
             if (String.IsNullOrWhiteSpace(@event.Title))
+            {
+                throw new InvalidEventDataException();
+            }
+            if (@event.TotalSeats <= 0)
             {
                 throw new InvalidEventDataException();
             }

@@ -1,7 +1,5 @@
 ﻿using CourseProject.Entities;
 using CourseProject.Interfaces;
-using System.Diagnostics.Metrics;
-using CourseProject.Exceptions;
 
 namespace CourseProject.Data
 {
@@ -18,8 +16,9 @@ namespace CourseProject.Data
                     Title = "Концерт",
                     Description = "Концерт популярного певца",
                     StartAt = new DateTime(2026, 9, 1, 18, 0, 0),
-                    EndAt = new DateTime(2026, 9, 1, 21, 0, 0)
-
+                    EndAt = new DateTime(2026, 9, 1, 21, 0, 0),
+                    TotalSeats = 50,
+                    AvailableSeats = 50
                 },
                 new Event
                 {
@@ -27,7 +26,9 @@ namespace CourseProject.Data
                     Title = "Шоу",
                     Description = "Гастроли популярного шоу",
                     StartAt = new DateTime(2026, 9, 14, 19, 0, 0),
-                    EndAt = new DateTime(2026, 9, 14, 21, 30, 0)
+                    EndAt = new DateTime(2026, 9, 14, 21, 30, 0),
+                    TotalSeats = 25,
+                    AvailableSeats = 25
                 },
                 new Event
                 {
@@ -35,7 +36,9 @@ namespace CourseProject.Data
                     Title = "Stand Up",
                     Description = "Stand Up ТНТ",
                     StartAt = new DateTime(2026, 9, 2, 18, 0, 0),
-                    EndAt = new DateTime(2026, 9, 2, 21, 0, 0)
+                    EndAt = new DateTime(2026, 9, 2, 21, 0, 0),
+                    TotalSeats = 40,
+                    AvailableSeats = 40
 
                 },
                 new Event
@@ -44,7 +47,9 @@ namespace CourseProject.Data
                     Title = "Мероприятие",
                     Description = "Какое-то мероприятие",
                     StartAt = new DateTime(2026, 9, 25, 19, 0, 0),
-                    EndAt = new DateTime(2026, 9, 25, 21, 30, 0)
+                    EndAt = new DateTime(2026, 9, 25, 21, 30, 0),
+                    TotalSeats = 10,
+                    AvailableSeats = 10
                 }
             );
         }
@@ -88,9 +93,9 @@ namespace CourseProject.Data
                 _events.Remove(eventFromList);
                 return true;
             }
-            
+
             return false;
-        }
+        } 
 
     }
 }

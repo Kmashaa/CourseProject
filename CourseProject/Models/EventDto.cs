@@ -25,6 +25,13 @@ namespace CourseProject.Models
         [SwaggerSchema("End date and time", Format = "yyyy-MM-dd HH:mm:ss")]
         public DateTime EndAt { get; set; }
 
+        [Required(ErrorMessage = "Number of total seats is required")]
+        [SwaggerSchema("Number of total seats at the event")]
+        public int? TotalSeats { get; set; }
+
+        [SwaggerSchema(ReadOnly = true)]
+        public int? AvailableSeats { get; set; }
+
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (EndAt <= StartAt)

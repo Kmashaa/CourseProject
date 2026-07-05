@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace CourseProject.Entities
+﻿namespace CourseProject.Entities
 {
     public class Event
     {
@@ -13,5 +11,29 @@ namespace CourseProject.Entities
         public required DateTime StartAt { get; set; }
 
         public required DateTime EndAt { get; set; }
+
+        public required int TotalSeats { get; set; }
+
+        public int AvailableSeats { get; set; }
+
+        public bool TryReserveSeats(int count = 1)
+        {
+            if (AvailableSeats >= 0 && AvailableSeats - count >= 0)
+            {
+                AvailableSeats -= count;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool ReleaseSeats(int count)
+        {
+            AvailableSeats+= count;
+            return true;
+        }
+
     }
 }
