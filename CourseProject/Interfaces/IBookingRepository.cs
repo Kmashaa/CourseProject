@@ -14,5 +14,7 @@ namespace CourseProject.Interfaces
 
         Task<bool> DeleteAsync(Guid id);
 
+        Task<List<Booking>> GetPendingsAsync();
+
     }
 }

@@ -59,5 +59,11 @@ namespace CourseProject.Data
 
             return Task.FromResult(false);
         }
+
+        public Task<List<Booking>> GetPendingsAsync()
+        {
+            return Task.FromResult(_bookings.Where(b => b.Status == Entities.BookingStatus.Pending).OrderBy(c => c.CreatedAt).ToList());
+
+        }
     }
 }

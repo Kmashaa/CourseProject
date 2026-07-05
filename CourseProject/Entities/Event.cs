@@ -29,9 +29,9 @@
             }
         }
 
-        public bool ReleaseSeats(int count)
+        public bool ReleaseSeats(int count = 1)
         {
-            AvailableSeats+= count;
+            AvailableSeats += count;
             return true;
         }
 
