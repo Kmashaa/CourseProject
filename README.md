@@ -52,10 +52,14 @@ HTTP:
 	POST /events — создать событие;
 	PUT /events/{id} — обновить событие целиком;
 	DELETE /events/{id} — удалить событие;
-	POST /events/{id}/book – бронирование собятия;
+	POST /events/{id}/book – бронирование события;
 
 ### Booking:
-	GET /bookings/{id} – получение информации о бронировании
+	GET /bookings/{id} – получение информации о бронировании. Возвращает:
+		200	OK
+		202	Bookings was accepted successfully
+		404	Event was not found
+		409	Event no available seats for the event
 
 ## Описание моделей
 ```
@@ -80,14 +84,72 @@ HTTP:
     }
 ```
 
+```
+    public class Event
+    {
+        public required Guid Id { get; set; } //id события
+
+        public required string Title { get; set; } //название события
+
+        public string? Description { get; set; } //описание события
+
+        public required DateTime StartAt { get; set; } //дата и время начала события
+
+        public required DateTime EndAt { get; set; } //дата и время окончания события
+
+        public required int TotalSeats { get; set; } //общее количество место
+
+        public int AvailableSeats { get; set; } //количество свободных мест
+
+        public bool TryReserveSeats(int count = 1) //метод резервирования мест
+        {
+            if (AvailableSeats >= 0 && AvailableSeats - count >= 0)
+            {
+                AvailableSeats -= count;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool ReleaseSeats(int count = 1) //метод возвращения мест
+        {
+            AvailableSeats += count;
+            return true;
+        }
+```
+
+## Описание примитивов синхронизации
+Для синхронизации используются SemaphoreSlim(1, 1) в BookingProcessingService и BookingService.
+
+В BookingService для проверки существования события и резервирования места для брони.
+
+В BookingProcessingService для проверки существования события и присвоения необходимого статуса брони.
+
 ## Описание логики фоновой обработки заявок
-	Заявки, при создании, попадают в хранилище со статусом Pending. Фоновый обработчик ходит туда каждые 2 секунды и получает все заявки со статусом Pending. Обрабатывает их ("обращение в стороннюю систему" в течение 5 секунд, присвоение статуса Confirmed, присвоение даты и времени обработки заявки, обновление заявки в хранилище).
+	Заявки, при создании, попадают в хранилище со статусом Pending. 
+	
+	Фоновый обработчик ходит туда каждые 2 секунды и получает все заявки со статусом Pending.
+	
+	Обрабатывает их ("обращение в стороннюю систему" в течение 5 секунд, присвоение статуса Confirmed, присвоение даты и времени обработки заявки, обновление заявки в хранилище).
 
 ## Пример сценария использования
-Пользователь создает событие через POST /events;
-Создает бронь через POST /events/{id}/book и получает Location, по которому может следить за статусом своей заявки;
-Пользователь сразу же запрашивает информацию о своей заявке GET /bookings/{id} и получает статус Pending;
-Ожидает несколько секунд и повторяет запрос — статус изменился на Confirmed или Rejected.
+	Пользователь создает событие через POST /events;
+
+	Создает бронь через POST /events/{id}/book и получает Location, по которому может следить за статусом своей заявки;
+
+	Пользователь сразу же запрашивает информацию о своей заявке GET /bookings/{id} и получает статус Pending;
+
+	Ожидает несколько секунд и повторяет запрос — статус изменился на Confirmed или Rejected.
+
+## Пример сценария овербукинга
+	Пользователь создает событие через POST /events с количеством мест (TotalSeats) = 3;
+
+	Создает три брони через POST /events/{id}/book и получает Location для каждой, по которому может следить за статусом заявок;
+
+	Пользователь создает еще одну бронь через POST /events/{id}/book и получает статус 409 Conflict из-за отсутствия свободных мест.
 	
 ## Архитектура CourseProject
   Entities: Доменные сущности
