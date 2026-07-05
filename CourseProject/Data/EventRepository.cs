@@ -8,7 +8,6 @@ namespace CourseProject.Data
     public class EventRepository : IEventRepository
     {
         private readonly List<Event> _events = new();
-        private static int counter = 0;
         public EventRepository()
         {
             //Имитация данных из БД
