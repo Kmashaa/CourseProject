@@ -25,7 +25,7 @@ namespace CourseProject.Services
                 throw new InvalidEventDataException();
             }
 
-            await _semaphore.WaitAsync();
+            await _semaphore.WaitAsync(); //semaphore, а не lock, т.к. внутри асинхронный код
 
             try
             {

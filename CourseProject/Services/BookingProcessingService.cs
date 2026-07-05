@@ -11,6 +11,9 @@ namespace CourseProject.Services
 
         private readonly SemaphoreSlim _processingSemaphore = new SemaphoreSlim(1, 1);
 
+        private readonly int PollingInterval = 2;
+        private readonly int ProcessingDelay = 5;
+
         public BookingProcessingService(IBookingRepository bookingRepository, IEventRepository eventRepository, ILogger<BookingProcessingService> logger)
         {
             _bookingRepository = bookingRepository;
@@ -38,7 +41,7 @@ namespace CourseProject.Services
                 {
                     break;
                 }
-                await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(PollingInterval), stoppingToken);
             }
         }
 
@@ -48,9 +51,9 @@ namespace CourseProject.Services
 
             _logger.LogInformation($"{DateTime.Now}: Заявка {booking.Id} взята в обработку");
 
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(ProcessingDelay), stoppingToken);
 
-            await _processingSemaphore.WaitAsync();
+            await _processingSemaphore.WaitAsync(stoppingToken);
 
             try
             {
@@ -77,7 +80,7 @@ namespace CourseProject.Services
                 var @event = _eventRepository.GetById(booking.EventId);
 
                 booking.Reject();
-                @event.ReleaseSeats();
+                @event?.ReleaseSeats();
                 await _bookingRepository.UpdateAsync(booking);
                 _eventRepository.Update(@event);
                 _logger.LogWarning($"{DateTime.Now}: Заявка {booking.Id} отклонена");
