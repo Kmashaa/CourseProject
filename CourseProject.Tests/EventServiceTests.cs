@@ -4,20 +4,20 @@ using CourseProject.Interfaces;
 using CourseProject.Models;
 using Moq;
 
-namespace EventService.Tests
+namespace CourseProject.Tests
 {
     public class EventServiceTests
     {
         private readonly Mock<IEventRepository> _repositoryMock;
         private readonly Mock<IEventDtoMapperService> _mapperMock;
-        private readonly CourseProject.Services.EventService _service;
+        private readonly Services.EventService _service;
 
         public EventServiceTests()
         {
             _repositoryMock = new Mock<IEventRepository>();
             _mapperMock = new Mock<IEventDtoMapperService>();
 
-            _service = new CourseProject.Services.EventService(_repositoryMock.Object, _mapperMock.Object);
+            _service = new Services.EventService(_repositoryMock.Object, _mapperMock.Object);
         }
 
         [Fact]

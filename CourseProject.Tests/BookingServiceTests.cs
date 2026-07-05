@@ -4,7 +4,7 @@ using CourseProject.Interfaces;
 using CourseProject.Services;
 using Moq;
 
-namespace EventService.Tests
+namespace CourseProject.Tests
 {
     public class BookingServiceTests
     {
@@ -12,14 +12,14 @@ namespace EventService.Tests
         private readonly Mock<IEventService> _eventsServiceMock;
 
 
-        private readonly CourseProject.Services.BookingService _service;
+        private readonly BookingService _service;
 
         public BookingServiceTests()
         {
             _bookingsRepositoryMock = new Mock<IBookingRepository>();
             _eventsServiceMock = new Mock<IEventService>();
 
-            _service = new CourseProject.Services.BookingService(_bookingsRepositoryMock.Object, _eventsServiceMock.Object);
+            _service = new BookingService(_bookingsRepositoryMock.Object, _eventsServiceMock.Object);
         }
 
         [Fact]
@@ -125,6 +125,7 @@ namespace EventService.Tests
             _bookingsRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Guid>()), Times.Never);
         }
 
+        [Fact]
         public async Task GetBookingById_WhenBookingDoesNotExist_ReturnsNull()
         {
             // Arrange

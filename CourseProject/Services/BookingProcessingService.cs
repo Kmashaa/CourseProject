@@ -1,15 +1,17 @@
 ﻿using CourseProject.Interfaces;
-using static System.Net.WebRequestMethods;
 
 namespace CourseProject.Services
 {
     public class BookingProcessingService : BackgroundService
     {
         private readonly IBookingRepository _repository;
+        private readonly ILogger<BookingProcessingService> _logger;
 
-        public BookingProcessingService(IBookingRepository repository)
+
+        public BookingProcessingService(IBookingRepository repository, ILogger<BookingProcessingService> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -24,10 +26,13 @@ namespace CourseProject.Services
                     {
                         foreach (var pendingBooking in pendingBookings)
                         {
+                            _logger.LogInformation($"{DateTime.Now}: Задача {pendingBooking.Id} взята в обработку");
                             await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                             pendingBooking.Status = Entities.BookingStatus.Confirmed;
                             pendingBooking.ProcessedAt = DateTime.Now;
                             await _repository.UpdateAsync(pendingBooking);
+                            _logger.LogInformation($"{DateTime.Now}: Задача {pendingBooking.Id} обработана");
+
                         }
                     }
                 }
