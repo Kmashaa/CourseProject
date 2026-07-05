@@ -120,6 +120,8 @@ namespace CourseProject.Controllers
         /// <returns>Booking detailst</returns>
         /// <response code="202">Bookings was accepted successfully</response>
         /// <response code="404">Event was not found</response>
+        /// <response code="409">Event no available seats for the event</response>
+
         [HttpPost("{id}/book")]
         public async Task<IActionResult> BookEvent(Guid id)
         {

@@ -6,12 +6,14 @@ namespace CourseProject.Services
 {
     public class BookingService : IBookingService
     {
-        private readonly IBookingRepository _repository;
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+
+        private readonly IBookingRepository _bookingRepository;
         private readonly IEventService _eventService;
 
         public BookingService(IBookingRepository repository, IEventService eventService)
         {
-            _repository = repository;
+            _bookingRepository = repository;
             _eventService = eventService;
         }
 
@@ -23,19 +25,36 @@ namespace CourseProject.Services
                 throw new InvalidEventDataException();
             }
 
-            var @event = _eventService.GetEventById((Guid)eventId);
+            await _semaphore.WaitAsync();
 
-            if (@event == null)
+            try
             {
-                throw new EventNotFoundException();
-            }
+                var @event = _eventService.GetEventById((Guid)eventId);
 
-            return await _repository.CreateAsync((Guid)eventId);
+                if (@event == null)
+                {
+                    throw new EventNotFoundException();
+                }
+
+                if (@event.TryReserveSeats())
+                {
+                    _eventService.UpdateEvent(@event);
+                    return await _bookingRepository.CreateAsync((Guid)eventId);
+                }
+                else
+                {
+                    throw new NoAvailableSeatsException();
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         public async Task<Booking?> GetBookingByIdAsync(Guid bookingId)
         {
-            return await _repository.GetByIdAsync(bookingId);
+            return await _bookingRepository.GetByIdAsync(bookingId);
         }
 
     }
