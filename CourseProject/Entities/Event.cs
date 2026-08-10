@@ -1,4 +1,6 @@
-﻿namespace CourseProject.Entities
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace CourseProject.Entities
 {
     public class Event
     {
@@ -15,6 +17,32 @@
         public required int TotalSeats { get; set; }
 
         public int AvailableSeats { get; set; }
+
+        public ICollection<Booking> Bookings { get; set; } = [];
+
+
+        [SetsRequiredMembers]
+        private Event()
+        {
+            Title = null!;
+        }
+
+        public Event(
+            Guid id,
+            string title,
+            DateTime startAt,
+            DateTime endAt,
+            int totalSeats,
+            string? description = null)
+        {
+            Id = id;
+            Title = title;
+            StartAt = startAt;
+            EndAt = endAt;
+            TotalSeats = totalSeats;
+            AvailableSeats = totalSeats;
+            Description = description;
+        }
 
         public bool TryReserveSeats(int count = 1)
         {

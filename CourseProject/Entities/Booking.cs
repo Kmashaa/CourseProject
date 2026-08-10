@@ -1,4 +1,5 @@
-﻿using System.Net.NetworkInformation;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net.NetworkInformation;
 
 namespace CourseProject.Entities
 {
@@ -13,6 +14,11 @@ namespace CourseProject.Entities
         public required DateTime CreatedAt { get; set; }
 
         public DateTime? ProcessedAt { get; set; }
+
+        public Event? Event { get; set; }
+
+        [SetsRequiredMembers]
+        private Booking() { }
 
         public void Confirm()
         {
