@@ -1,70 +1,76 @@
-﻿using CourseProject.Entities;
+﻿using CourseProject.DataAccess;
+using CourseProject.Entities;
 using CourseProject.Exceptions;
 using CourseProject.Interfaces;
 using CourseProject.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace CourseProject.Services
 {
     public class EventService : IEventService
     {
-        private readonly IEventRepository _repository;
+        private readonly AppDbContext _context;
 
-        public EventService(IEventRepository repository, IEventDtoMapperService eventDtoMapperService)
+        public EventService(AppDbContext context, IEventDtoMapperService eventDtoMapperService)
         {
-            _repository = repository;
+            _context = context;
         }
-        
-        public List<Event>? GetAllEvents()
+
+        public async Task<List<Event>?> GetAllEventsAsync()
         {
-            var events = _repository.GetAll();
+            var events = await _context.Events.ToListAsync();
             return events;
         }
 
-        public PaginatedResult GetEvents(EventFilter filter)
+        public async Task<PaginatedResult> GetEventsAsync(EventFilter filter)
         {
-            var events = GetAllEvents();
+            var events = await GetAllEventsAsync();
             var filteredEvents = FilterEvents(events, filter);
             return filteredEvents;
         }
 
-        public Event? GetEventById(Guid id)
+        public async Task<Event?> GetEventByIdAsync(Guid id)
         {
-            return _repository.GetById(id);
+            return await _context.Events.FirstOrDefaultAsync(o=>o.Id==id);
         }
 
-        public Event CreateEvent(Event @event)
+        public async Task<Event> CreateEventAsync(Event @event)
         {
             ValidateEvent(@event);
             @event.AvailableSeats = @event.TotalSeats;
-            return _repository.Create(@event);
+            await _context.Events.AddAsync(@event);
+            await _context.SaveChangesAsync();
+            return @event;
         }
 
-        public Event UpdateEvent(Event @event)
+        public async Task<Event> UpdateEventAsync(Event @event)
         {
             ValidateEvent(@event);
 
-            var updated = _repository.Update(@event);
-            if (updated == null)
+            var eventToUpdate = await GetEventByIdAsync(@event.Id);
+            if (eventToUpdate == null)
             {
                 throw new EventNotFoundException();
             }
 
-            return updated;
+            eventToUpdate.Update(@event.Title, @event.StartAt, @event.EndAt, @event.Description);
+
+            await _context.SaveChangesAsync();
+
+
+            return eventToUpdate;
         }
 
-        public void DeleteEvent(Guid? id)
+        public async Task DeleteEventAsync(Guid? id)
         {
             if (id == null)
             {
                 throw new InvalidEventDataException();
             }
-
-            bool deleted = _repository.Delete((Guid)id);
-
-            if (!deleted)
-            {
-                throw new EventNotFoundException();
-            }
+            var @event = await GetEventByIdAsync((Guid)id);
+            if (@event == null) { return; }
+            _context.Events.Remove(@event);
+            await _context.SaveChangesAsync();
         }
 
         public PaginatedResult FilterEvents(List<Event> events, EventFilter filter)

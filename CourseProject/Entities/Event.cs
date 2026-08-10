@@ -27,6 +27,7 @@ namespace CourseProject.Entities
             Title = null!;
         }
 
+        [SetsRequiredMembers]
         public Event(
             Guid id,
             string title,
@@ -41,6 +42,28 @@ namespace CourseProject.Entities
             EndAt = endAt;
             TotalSeats = totalSeats;
             AvailableSeats = totalSeats;
+            Description = description;
+        }
+
+        public static Event Create(
+            string? title,
+            DateTime? startAt,
+            DateTime? endAt,
+            int? totalSeats = null,
+            string? description = null)
+        {
+            return new Event(Guid.NewGuid(), title!.Trim(), startAt!.Value, endAt!.Value, totalSeats!.Value, description);
+        }
+
+        internal void Update(
+           string? title,
+           DateTime? startAt,
+           DateTime? endAt,
+           string? description = null)
+        {
+            Title = title!;
+            StartAt = startAt!.Value;
+            EndAt = endAt!.Value;
             Description = description;
         }
 

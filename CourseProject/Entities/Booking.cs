@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 
 namespace CourseProject.Entities
@@ -20,6 +21,15 @@ namespace CourseProject.Entities
         [SetsRequiredMembers]
         private Booking() { }
 
+        [SetsRequiredMembers]
+        private Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt)
+        {
+            Id = id;
+            EventId = eventId;
+            Status = status;
+            CreatedAt = createdAt;
+        }
+
         public void Confirm()
         {
             Status = BookingStatus.Confirmed;
@@ -30,6 +40,14 @@ namespace CourseProject.Entities
         {
             Status = BookingStatus.Rejected;
             ProcessedAt = DateTime.Now;
+        }
+
+        public static Booking CreatePending(Guid eventId)
+        {
+            if (eventId == Guid.Empty)
+                throw new ValidationException(nameof(EventId));
+
+            return new Booking(Guid.NewGuid(), eventId, BookingStatus.Pending, DateTime.UtcNow);
         }
 
     }

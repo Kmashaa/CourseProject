@@ -5,17 +5,17 @@ namespace CourseProject.Interfaces
 {
     public interface IEventService
     {
-        List<Event>? GetAllEvents();
+        Task<List<Event>?> GetAllEventsAsync();
 
-        Event? GetEventById(Guid id);
+        Task<Event?> GetEventByIdAsync(Guid id);
 
-        PaginatedResult GetEvents(EventFilter filter);
+        Task<PaginatedResult> GetEventsAsync(EventFilter filter);
 
-        Event CreateEvent(Event @event);
-        
-        Event UpdateEvent(Event @event);
+        Task<Event> CreateEventAsync(Event @event);
 
-        void DeleteEvent(Guid? index);
+        Task<Event> UpdateEventAsync(Event @event);
+
+        Task DeleteEventAsync(Guid? index);
 
         PaginatedResult FilterEvents(List<Event> events, EventFilter filter);
 

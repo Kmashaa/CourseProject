@@ -1,4 +1,5 @@
 ﻿using CourseProject.Data;
+using CourseProject.DataAccess;
 using CourseProject.Interfaces;
 using CourseProject.Services;
 
@@ -8,8 +9,7 @@ namespace CourseProject.Extensions
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {
-            services.AddSingleton<IEventRepository, EventRepository>(); // Added as Singleton for testing. Normally added as Scoped
-            services.AddSingleton<IBookingRepository, BookingRepository>(); // Added as Singleton for testing. Normally added as Scoped
+            services.AddScoped<AppDbContext>();
 
             return services;
         }

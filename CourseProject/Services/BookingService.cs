@@ -1,6 +1,8 @@
-﻿using CourseProject.Entities;
+﻿using CourseProject.DataAccess;
+using CourseProject.Entities;
 using CourseProject.Exceptions;
 using CourseProject.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace CourseProject.Services
 {
@@ -8,13 +10,11 @@ namespace CourseProject.Services
     {
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        private readonly IBookingRepository _bookingRepository;
-        private readonly IEventService _eventService;
+        private readonly AppDbContext _context;
 
-        public BookingService(IBookingRepository repository, IEventService eventService)
+        public BookingService(AppDbContext context)
         {
-            _bookingRepository = repository;
-            _eventService = eventService;
+            _context = context;
         }
 
 
@@ -29,7 +29,7 @@ namespace CourseProject.Services
 
             try
             {
-                var @event = _eventService.GetEventById((Guid)eventId);
+                var @event = await _context.Events.FirstOrDefaultAsync(o => o.Id == eventId);
 
                 if (@event == null)
                 {
@@ -38,8 +38,10 @@ namespace CourseProject.Services
 
                 if (@event.TryReserveSeats())
                 {
-                    _eventService.UpdateEvent(@event);
-                    return await _bookingRepository.CreateAsync((Guid)eventId);
+                    var booking = Booking.CreatePending(@event.Id);
+                    await _context.Bookings.AddAsync(booking);
+                    await _context.SaveChangesAsync();
+                    return booking;
                 }
                 else
                 {
@@ -54,7 +56,7 @@ namespace CourseProject.Services
 
         public async Task<Booking?> GetBookingByIdAsync(Guid bookingId)
         {
-            return await _bookingRepository.GetByIdAsync(bookingId);
+            return await _context.Bookings.FirstOrDefaultAsync(o=>o.Id==bookingId);
         }
 
     }
