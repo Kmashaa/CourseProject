@@ -1,4 +1,4 @@
-using CourseProject.Data;
+using CourseProject.DataAccess;
 using CourseProject.Extensions;
 using CourseProject.Interfaces;
 using CourseProject.Services;
@@ -29,10 +29,16 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();

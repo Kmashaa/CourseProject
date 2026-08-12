@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using CourseProject.Models;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 
@@ -22,7 +23,7 @@ namespace CourseProject.Entities
         private Booking() { }
 
         [SetsRequiredMembers]
-        private Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt)
+        public Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt)
         {
             Id = id;
             EventId = eventId;
@@ -33,13 +34,13 @@ namespace CourseProject.Entities
         public void Confirm()
         {
             Status = BookingStatus.Confirmed;
-            ProcessedAt = DateTime.Now;
+            ProcessedAt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
         }
 
         public void Reject()
         {
             Status = BookingStatus.Rejected;
-            ProcessedAt = DateTime.Now;
+            ProcessedAt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
         }
 
         public static Booking CreatePending(Guid eventId)

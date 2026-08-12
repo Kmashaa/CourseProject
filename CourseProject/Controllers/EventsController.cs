@@ -32,9 +32,9 @@ namespace CourseProject.Controllers
         /// <returns>List of all events</returns>
         /// <response code="200">Event list received successfully</response>
         [HttpGet]
-        public IActionResult GetAll([FromQuery] EventFilter filter)
+        public async Task<IActionResult> GetAll([FromQuery] EventFilter filter)
         {
-            var events =_eventService.GetEvents(filter);
+            var events = await _eventService.GetEventsAsync(filter);
             PaginatedResultDto eventsDto = new()
             {
                 TotalItems = events.TotalItems,
@@ -54,9 +54,9 @@ namespace CourseProject.Controllers
         /// <response code="404">Event not found</response>
 
         [HttpGet("{id}")]
-        public IActionResult GetById(Guid id)
+        public async Task <IActionResult> GetById(Guid id)
         {
-            var @event = _eventService.GetEventById(id);
+            var @event = await _eventService.GetEventByIdAsync(id);
 
             if (@event == null)
             {
@@ -72,10 +72,10 @@ namespace CourseProject.Controllers
         /// <returns>Created event</returns>
         /// <response code="201">Event created successfully</response>
         [HttpPost]
-        public IActionResult Create([FromBody] EventDto eventDto)
+        public async Task<IActionResult> Create([FromBody] EventDto eventDto)
         {
             var @event = _eventDtoMapperService.DtoToEntity(eventDto);
-            _eventService.CreateEvent(@event);
+            await _eventService.CreateEventAsync(@event);
 
             return CreatedAtAction(nameof(GetById), new { id = @event.Id }, _eventDtoMapperService.EntityToDto(@event)); // 201 Created
         }
@@ -90,12 +90,12 @@ namespace CourseProject.Controllers
 
 
         [HttpPut("{id}")]
-        public IActionResult Update(Guid id, [FromBody] EventDto eventDto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] EventDto eventDto)
         {
             eventDto.Id = id;
             var @event = _eventDtoMapperService.DtoToEntity(eventDto);
 
-            _eventService.UpdateEvent(@event);
+            await _eventService.UpdateEventAsync(@event);
 
             return NoContent(); // 204 No Content
         }
@@ -108,9 +108,9 @@ namespace CourseProject.Controllers
         /// <response code="404">Event not found</response>
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
-            _eventService.DeleteEvent(id);
+            await _eventService.DeleteEventAsync(id);
             return NoContent(); // 204 No Content
         }
 

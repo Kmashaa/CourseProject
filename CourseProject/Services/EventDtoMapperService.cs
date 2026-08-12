@@ -8,15 +8,8 @@ namespace CourseProject.Services
     {
         public Event DtoToEntity(EventDto eventDto)
         {
-            Event @event = new()
-            {
-                Id = eventDto.Id,
-                Title = eventDto.Title,
-                Description = eventDto.Description,
-                StartAt = eventDto.StartAt,
-                EndAt = eventDto.EndAt,
-                TotalSeats=(int)eventDto.TotalSeats
-            };
+            Event @event = new(eventDto.Id, eventDto.Title, DateTime.SpecifyKind(eventDto.StartAt, DateTimeKind.Utc), DateTime.SpecifyKind(eventDto.EndAt, DateTimeKind.Utc), (int)eventDto.TotalSeats, eventDto.Description);
+            
             return @event;
         }
 

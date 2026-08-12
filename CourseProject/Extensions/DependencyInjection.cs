@@ -1,15 +1,18 @@
-﻿using CourseProject.Data;
-using CourseProject.DataAccess;
+﻿using CourseProject.DataAccess;
 using CourseProject.Interfaces;
 using CourseProject.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace CourseProject.Extensions
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddScoped<AppDbContext>();
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(connectionString));
 
             return services;
         }

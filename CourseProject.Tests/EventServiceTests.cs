@@ -1,63 +1,100 @@
-﻿using CourseProject.Entities;
+﻿using CourseProject.DataAccess;
+using CourseProject.Entities;
 using CourseProject.Exceptions;
 using CourseProject.Interfaces;
 using CourseProject.Models;
+using CourseProject.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace CourseProject.Tests
 {
-    public class EventServiceTests
+    public class EventServiceTests : IDisposable
     {
-        private readonly Mock<IEventRepository> _repositoryMock;
-        private readonly Mock<IEventDtoMapperService> _mapperMock;
-        private readonly Services.EventService _service;
+        //private readonly Mock<IEventRepository> _repositoryMock;
+        //private readonly Mock<IEventDtoMapperService> _mapperMock;
+        //private readonly Services.EventService _service;
+
+        private readonly ServiceProvider _serviceProvider;
+        private readonly IServiceScope _scope;
+        private readonly IEventService _eventService;
+        private readonly AppDbContext _context;
 
         public EventServiceTests()
         {
-            _repositoryMock = new Mock<IEventRepository>();
-            _mapperMock = new Mock<IEventDtoMapperService>();
 
-            _service = new Services.EventService(_repositoryMock.Object, _mapperMock.Object);
+            var dbName = Guid.NewGuid().ToString();
+            var services = new ServiceCollection();
+
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseInMemoryDatabase(dbName));
+
+            services.AddScoped<IEventService, EventService>();
+
+            var mapperMock = new Mock<IEventDtoMapperService>();
+            services.AddSingleton(mapperMock.Object);
+
+            _serviceProvider = services.BuildServiceProvider();
+
+            _scope = _serviceProvider.CreateScope();
+
+            _eventService = _serviceProvider.GetRequiredService<IEventService>();
+
+            _context = _scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        }
+
+        // Реализация IDisposable для очистки ресурсов после каждого прогона теста
+        public void Dispose()
+        {
+            _context.Database.EnsureDeleted();
+            _context.Dispose();
+
+            _scope.Dispose();
+            _serviceProvider.Dispose();
         }
 
         [Fact]
-        public void GetAllEvents_ReturnsAllEvents()
+        public async Task GetAllEvents_ReturnsAllEvents()
         {
-            // Arrange
-            var expectedEvents = new List<Event>
-                {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50}
-                };
+            // Arrange 
 
-            _repositoryMock.Setup(repo => repo.GetAll()).Returns(expectedEvents);
+            var event1 = Event.Create("Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc), 50);
+            var event2 = Event.Create("Test Event 2", new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc), 50);
 
-            // Act
-            var result = _service.GetAllEvents();
 
-            // Assert
+            _context.Events.AddRange(event1, event2);
+            await _context.SaveChangesAsync();
+
+            // 2. Act 
+            var result = await _eventService.GetAllEventsAsync();
+
+            // 3. Assert (Проверка результатов)
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
             Assert.Equal("Test Event 1", result[0].Title);
+
+
         }
 
         [Fact]
-        public void GetEventById_ExistedId_ReturnsEventsWithThisId()
+        public async Task GetEventById_ExistedId_ReturnsEventsWithThisId()
         {
             // Arrange
-            var expectedEvent = new Event
-            {
-                Id = Guid.NewGuid(),
-                Title = "Test Event 1",
-                StartAt = new DateTime(2026, 4, 5, 0, 0, 0),
-                EndAt = new DateTime(2026, 4, 5, 1, 0, 0),
-                TotalSeats = 50
-            };
+            var expectedEvent = Event.Create(
+                "Test Event 1",
+                new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                50
+            );
 
-            _repositoryMock.Setup(repo => repo.GetById(expectedEvent.Id)).Returns(expectedEvent);
+            _context.Events.Add(expectedEvent);
+            await _context.SaveChangesAsync();
+
 
             // Act
-            var result = _service.GetEventById(expectedEvent.Id);
+            var result = await _eventService.GetEventByIdAsync(expectedEvent.Id);
 
             // Assert
             Assert.NotNull(result);
@@ -66,128 +103,155 @@ namespace CourseProject.Tests
         }
 
         [Fact]
-        public void GetEventById_NotExistedId_ReturnsNull()
+        public async Task GetEventById_NotExistedId_ReturnsNull()
         {
             // Arrange
             var notExistedGuid = Guid.NewGuid();
-            _repositoryMock.Setup(repo => repo.GetById(notExistedGuid)).Returns((Event?)null);
 
             // Act
-            var result = _service.GetEventById(notExistedGuid);
+            var result = await _eventService.GetEventByIdAsync(notExistedGuid);
 
             // Assert
             Assert.Null(result);
         }
 
         [Fact]
-        public void CreateEvent_WithCorrectData_ShouldCallRepositoryCreate()
+        public async Task CreateEvent_WithCorrectData_ShouldCallRepositoryCreate()
         {
             // Arrange
-            var newEvent = new Event
-            {
-                Id = Guid.NewGuid(),
-                Title = "Test Event 1",
-                StartAt = new DateTime(2026, 4, 5, 0, 0, 0),
-                EndAt = new DateTime(2026, 4, 5, 1, 0, 0),
-                TotalSeats = 50
-            };
-            _repositoryMock.Setup(repo => repo.Create(newEvent)).Returns(newEvent);
+            var newEvent = Event.Create
+            (
+                "Test Event 1",
+                new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                50
+            );
 
             // Act
-            var result = _service.CreateEvent(newEvent);
+            var result = await _eventService.CreateEventAsync(newEvent);
 
             // Assert
             Assert.Equal(newEvent, result);
-            _repositoryMock.Verify(repo => repo.Create(It.IsAny<Event>()), Times.Once);
-            _repositoryMock.Verify(repo => repo.Create(It.Is<Event>(e => e.Title == "Test Event 1")), Times.Once);
+            Assert.NotNull(result);
 
+            var eventInDb = await _context.Events.FirstOrDefaultAsync(o => o.Id == newEvent.Id);
+            Assert.Equal(newEvent.Title, eventInDb.Title);
+            Assert.NotNull(eventInDb);
         }
 
         [Fact]
-        public void CreateEvent_WithIncorrectData_ThrowsException()
+        public async Task CreateEvent_WithIncorrectData_ThrowsException()
         {
             // Arrange
-            var newEvent = new Event
-            {
-                Id = Guid.NewGuid(),
-                Title = "Test Event 1",
-                StartAt = new DateTime(2026, 4, 5, 1, 0, 0),
-                EndAt = new DateTime(2026, 4, 5, 0, 0, 0),
-                TotalSeats = 50
-            };
+            var newEvent = Event.Create
+            (
+                "Test Event 1",
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
+                50
+            );
 
             // Act Assert
-            var exception = Assert.Throws<InvalidEventDataException>(() => _service.CreateEvent(newEvent));
+            var exception = Assert.ThrowsAsync<InvalidEventDataException>(async () => await _eventService.CreateEventAsync(newEvent));
         }
 
         [Fact]
-        public void UpdateEvent_WithCorrectData_ReturnsUpdatedEvent()
+        public async Task UpdateEvent_WithCorrectData_ReturnsUpdatedEvent()
         {
             // Arrange
-            var eventToUpdate = new Event
-            {
-                Id = Guid.NewGuid(),
-                Title = "Test Event 1",
-                StartAt = new DateTime(2026, 4, 5, 0, 0, 0),
-                EndAt = new DateTime(2026, 4, 5, 1, 0, 0),
-                TotalSeats = 50
-            };
-            _repositoryMock.Setup(repo => repo.Update(eventToUpdate)).Returns(eventToUpdate);
+            var eventToUpdate = Event.Create
+            (
+                "Test Event 1",
+                new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                50
+            );
 
+            var newEvent = Event.Create
+            (
+                "Test Event 2",
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 2, 0, 0, DateTimeKind.Utc),
+                60
+            );
+
+            newEvent.Id = eventToUpdate.Id;
+
+            _context.Events.Add(eventToUpdate);
+            await _context.SaveChangesAsync();
             // Act
-            var result = _service.UpdateEvent(eventToUpdate);
+            var result = await _eventService.UpdateEventAsync(newEvent);
 
             // Assert
-            Assert.Equal(result, eventToUpdate);
-            _repositoryMock.Verify(repo => repo.Update(It.Is<Event>(e => e.Title == "Test Event 1")), Times.Once);
-            _repositoryMock.Verify(repo => repo.Update(eventToUpdate), Times.Once);
+            Assert.Equal(result, newEvent);
+
+            _context.ChangeTracker.Clear();
+            var eventInDb = await _context.Events.FirstOrDefaultAsync(o => o.Id == newEvent.Id);
+
+            Assert.Equal(newEvent.Title, eventInDb.Title);
+            Assert.Equal(newEvent.StartAt, eventInDb.StartAt);
+            Assert.Equal(newEvent.EndAt, eventInDb.EndAt);
+            Assert.Equal(newEvent.AvailableSeats, eventInDb.AvailableSeats);
+
+            Assert.NotNull(eventInDb);
         }
 
         [Fact]
-        public void UpdateEvent_WithIncorrectData_ThrowsException()
+        public async Task UpdateEvent_WithIncorrectData_ThrowsException()
         {
             // Arrange
-            var eventToUpdate = new Event
-            {
-                Id = Guid.NewGuid(),
-                Title = "Test Event 1",
-                StartAt = new DateTime(2026, 4, 8, 0, 0, 0),
-                EndAt = new DateTime(2026, 4, 5, 1, 0, 0),
-                TotalSeats = 50
-            };
+            var eventToUpdate = Event.Create
+            (
+                "Test Event 1",
+                new DateTime(2026, 4, 8, 0, 0, 0),
+                new DateTime(2026, 4, 5, 1, 0, 0),
+                50
+            );
 
 
             // Act Assert
-            var exception = Assert.Throws<InvalidEventDataException>(() => _service.UpdateEvent(eventToUpdate));
+            var exception = Assert.ThrowsAsync<InvalidEventDataException>(async () => await _eventService.UpdateEventAsync(eventToUpdate));
         }
 
         [Fact]
-        public void DeleteEvent_WithCorrectId_DoesntThrowException()
+        public async Task DeleteEvent_WithCorrectId_DoesntThrowException()
         {
             // Arrange
-            Guid eventIdToDelete = Guid.NewGuid();
-            _repositoryMock.Setup(repo => repo.Delete(eventIdToDelete)).Returns(true);
+            var eventToDelete = Event.Create
+            (
+                "Test Event 1",
+                new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                50
+            );
+
+            _context.Events.Add(eventToDelete);
+            await _context.SaveChangesAsync();
 
             // Act
-            var exception = Record.Exception(() => _service.DeleteEvent(eventIdToDelete));
+            var exception = await Record.ExceptionAsync(async () =>
+                await _eventService.DeleteEventAsync(eventToDelete.Id));
 
             // Assert
             Assert.Null(exception);
-            _repositoryMock.Verify(repo => repo.Delete(eventIdToDelete), Times.Once);
+            _context.ChangeTracker.Clear();
+
+            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventToDelete.Id);
+            Assert.Null(eventInDb);
         }
 
         [Fact]
-        public void DeleteEvent_WithIncorrectId_ThrowsException()
+        public async Task DeleteEvent_WithIncorrectId_ThrowsException()
         {
             // Arrange
             Guid? eventId = null;
 
             // Act Assert
-            var exception = Assert.Throws<InvalidEventDataException>(() => _service.DeleteEvent(eventId));
+            var exception = Assert.ThrowsAsync<InvalidEventDataException>(async () => await _eventService.DeleteEventAsync(eventId));
         }
 
         [Fact]
-        public void GetEvents_FilterByTitle_ReturnsFilteredResults()
+        public async Task GetEvents_FilterByTitle_ReturnsFilteredResults()
         {
             // Arrange
             var filter = new EventFilter
@@ -197,32 +261,29 @@ namespace CourseProject.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50}
+                    Event.Create ("Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 2", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 3", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 4", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 2", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 3", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 4", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 2", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 3", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 4", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 2", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 3", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ("Test Event 4", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 )
 
                 };
-
-            _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
-
-            _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
+            _context.Events.AddRange(allEvents);
+            await _context.SaveChangesAsync();
 
             // Act
-            var result = _service.GetEvents(filter);
+            var result = await _eventService.GetEventsAsync(filter);
 
             // Assert
             Assert.NotNull(result);
@@ -232,7 +293,7 @@ namespace CourseProject.Tests
         }
 
         [Fact]
-        public void GetEvents_FilterByStartDate_ReturnsFilteredResults()
+        public async Task GetEvents_FilterByStartDate_ReturnsFilteredResults()
         {
             // Arrange
             var filter = new EventFilter
@@ -242,38 +303,35 @@ namespace CourseProject.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0), TotalSeats = 50}
+                    Event.Create ("Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50),
+                    Event.Create ("Test Event 2", new DateTime(2026, 4, 6, 0, 0, 0), new DateTime(2026, 4, 6, 1, 0, 0), 50),
+                    Event.Create ("Test Event 3", new DateTime(2026, 4, 7, 0, 0, 0), new DateTime(2026, 4, 7, 1, 0, 0), 50),
+                    Event.Create ("Test Event 4", new DateTime(2026, 4, 8, 0, 0, 0), new DateTime(2026, 4, 8, 1, 0, 0), 50),
+                    Event.Create ("Test Event 5", new DateTime(2026, 4, 9, 0, 0, 0), new DateTime(2026, 4, 9, 1, 0, 0), 50),
+                    Event.Create ("Test Event 6", new DateTime(2026, 4, 10, 0, 0, 0), new DateTime(2026, 4, 10, 1, 0, 0), 50),
+                    Event.Create ("Test Event 7", new DateTime(2026, 4, 11, 0, 0, 0), new DateTime(2026, 4, 11, 1, 0, 0), 50),
+                    Event.Create ("Test Event 8", new DateTime(2026, 4, 12, 0, 0, 0), new DateTime(2026, 4, 12, 1, 0, 0), 50),
+                    Event.Create ("Test Event 9", new DateTime(2026, 4, 13, 0, 0, 0), new DateTime(2026, 4, 13, 1, 0, 0), 50),
+                    Event.Create ("Test Event 10",new DateTime(2026, 4, 14, 0, 0, 0), new DateTime(2026, 4, 14, 1, 0, 0), 50),
+                    Event.Create ("Test Event 11",new DateTime(2026, 4, 15, 0, 0, 0), new DateTime(2026, 4, 15, 1, 0, 0), 50),
+                    Event.Create ("Test Event 12",new DateTime(2026, 4, 16, 0, 0, 0), new DateTime(2026, 4, 16, 1, 0, 0), 50),
+                    Event.Create ("Test Event 13",new DateTime(2026, 4, 17, 0, 0, 0), new DateTime(2026, 4, 17, 1, 0, 0), 50),
+                    Event.Create ("Test Event 14",new DateTime(2026, 4, 18, 0, 0, 0), new DateTime(2026, 4, 18, 1, 0, 0), 50),
+                    Event.Create ("Test Event 15",new DateTime(2026, 4, 19, 0, 0, 0), new DateTime(2026, 4, 19, 1, 0, 0), 50),
+                    Event.Create ("Test Event 16",new DateTime(2026, 4, 20, 0, 0, 0), new DateTime(2026, 4, 20, 1, 0, 0), 50)
+            };
 
-                };
-
-            _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
-
-            _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
+            _context.Events.AddRange(allEvents);
+            await _context.SaveChangesAsync();
 
             // Act
-            var result = _service.GetEvents(filter);
+            var result = await _eventService.GetEventsAsync(filter);
 
             // Assert
             Assert.NotNull(result);
             Assert.Equal(7, result.TotalItems);
             Assert.Equal(7, result.Events.Count);
-            Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o=>o.Title== "Test Event 1")?.Id);
+            Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 1")?.Id);
             Assert.All(result.Events, dto =>
             {
                 // Находим исходное событие по Id, чтобы сверить дату
@@ -283,7 +341,7 @@ namespace CourseProject.Tests
         }
 
         [Fact]
-        public void GetEvents_FilterByEndDate_ReturnsFilteredResults()
+        public async Task GetEvents_FilterByEndDate_ReturnsFilteredResults()
         {
             // Arrange
             var filter = new EventFilter
@@ -293,32 +351,29 @@ namespace CourseProject.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0), TotalSeats = 50}
-
+                    Event.Create ("Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50),
+                    Event.Create ("Test Event 2", new DateTime(2026, 4, 6, 0, 0, 0), new DateTime(2026, 4, 6, 1, 0, 0), 50),
+                    Event.Create ("Test Event 3", new DateTime(2026, 4, 7, 0, 0, 0), new DateTime(2026, 4, 7, 1, 0, 0), 50),
+                    Event.Create ("Test Event 4", new DateTime(2026, 4, 8, 0, 0, 0), new DateTime(2026, 4, 8, 1, 0, 0), 50),
+                    Event.Create ("Test Event 5", new DateTime(2026, 4, 9, 0, 0, 0), new DateTime(2026, 4, 9, 1, 0, 0), 50),
+                    Event.Create ("Test Event 6", new DateTime(2026, 4, 10, 0, 0, 0), new DateTime(2026, 4, 10, 1, 0, 0), 50),
+                    Event.Create ("Test Event 7", new DateTime(2026, 4, 11, 0, 0, 0), new DateTime(2026, 4, 11, 1, 0, 0), 50),
+                    Event.Create ("Test Event 8", new DateTime(2026, 4, 12, 0, 0, 0), new DateTime(2026, 4, 12, 1, 0, 0), 50),
+                    Event.Create ("Test Event 9", new DateTime(2026, 4, 13, 0, 0, 0), new DateTime(2026, 4, 13, 1, 0, 0), 50),
+                    Event.Create ("Test Event 10", new DateTime(2026, 4, 14, 0, 0, 0), new DateTime(2026, 4, 14, 1, 0, 0), 50),
+                    Event.Create ("Test Event 11", new DateTime(2026, 4, 15, 0, 0, 0), new DateTime(2026, 4, 15, 1, 0, 0), 50),
+                    Event.Create ("Test Event 12", new DateTime(2026, 4, 16, 0, 0, 0), new DateTime(2026, 4, 16, 1, 0, 0), 50),
+                    Event.Create ("Test Event 13", new DateTime(2026, 4, 17, 0, 0, 0), new DateTime(2026, 4, 17, 1, 0, 0), 50),
+                    Event.Create ("Test Event 14", new DateTime(2026, 4, 18, 0, 0, 0), new DateTime(2026, 4, 18, 1, 0, 0), 50),
+                    Event.Create ("Test Event 15", new DateTime(2026, 4, 19, 0, 0, 0), new DateTime(2026, 4, 19, 1, 0, 0), 50),
+                    Event.Create ("Test Event 16", new DateTime(2026, 4, 20, 0, 0, 0), new DateTime(2026, 4, 20, 1, 0, 0), 50)
                 };
 
-            _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
-
-            _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
+            _context.Events.AddRange(allEvents);
+            await _context.SaveChangesAsync();
 
             // Act
-            var result = _service.GetEvents(filter);
+            var result = await _eventService.GetEventsAsync(filter);
 
             // Assert
             Assert.NotNull(result);
@@ -334,7 +389,7 @@ namespace CourseProject.Tests
         }
 
         [Fact]
-        public void GetEvents_DefaultPagination_ReturnsFirst10Results()
+        public async Task GetEvents_DefaultPagination_ReturnsFirst10Results()
         {
             // Arrange
             var filter = new EventFilter
@@ -343,32 +398,30 @@ namespace CourseProject.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0), TotalSeats = 50}
+                    Event.Create( "Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50),
+                    Event.Create( "Test Event 2", new DateTime(2026, 4, 6, 0, 0, 0), new DateTime(2026, 4, 6, 1, 0, 0), 50),
+                    Event.Create( "Test Event 3", new DateTime(2026, 4, 7, 0, 0, 0), new DateTime(2026, 4, 7, 1, 0, 0), 50),
+                    Event.Create( "Test Event 4", new DateTime(2026, 4, 8, 0, 0, 0), new DateTime(2026, 4, 8, 1, 0, 0), 50),
+                    Event.Create( "Test Event 5", new DateTime(2026, 4, 9, 0, 0, 0), new DateTime(2026, 4, 9, 1, 0, 0), 50),
+                    Event.Create( "Test Event 6", new DateTime(2026, 4, 10, 0, 0, 0), new DateTime(2026, 4, 10, 1, 0, 0), 50),
+                    Event.Create( "Test Event 7", new DateTime(2026, 4, 11, 0, 0, 0), new DateTime(2026, 4, 11, 1, 0, 0), 50),
+                    Event.Create( "Test Event 8", new DateTime(2026, 4, 12, 0, 0, 0), new DateTime(2026, 4, 12, 1, 0, 0), 50),
+                    Event.Create( "Test Event 9", new DateTime(2026, 4, 13, 0, 0, 0), new DateTime(2026, 4, 13, 1, 0, 0), 50),
+                    Event.Create( "Test Event 10", new DateTime(2026, 4, 14, 0, 0, 0), new DateTime(2026, 4, 14, 1, 0, 0), 50),
+                    Event.Create( "Test Event 11", new DateTime(2026, 4, 15, 0, 0, 0), new DateTime(2026, 4, 15, 1, 0, 0), 50),
+                    Event.Create( "Test Event 12", new DateTime(2026, 4, 16, 0, 0, 0), new DateTime(2026, 4, 16, 1, 0, 0), 50),
+                    Event.Create( "Test Event 13", new DateTime(2026, 4, 17, 0, 0, 0), new DateTime(2026, 4, 17, 1, 0, 0), 50),
+                    Event.Create( "Test Event 14", new DateTime(2026, 4, 18, 0, 0, 0), new DateTime(2026, 4, 18, 1, 0, 0), 50),
+                    Event.Create( "Test Event 15", new DateTime(2026, 4, 19, 0, 0, 0), new DateTime(2026, 4, 19, 1, 0, 0), 50),
+                    Event.Create( "Test Event 16", new DateTime(2026, 4, 20, 0, 0, 0), new DateTime(2026, 4, 20, 1, 0, 0), 50)
 
                 };
 
-            _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
-
-            _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
+            _context.Events.AddRange(allEvents);
+            await _context.SaveChangesAsync();
 
             // Act
-            var result = _service.GetEvents(filter);
+            var result = await _eventService.GetEventsAsync(filter);
 
             // Assert
             Assert.NotNull(result);
@@ -378,7 +431,7 @@ namespace CourseProject.Tests
         }
 
         [Fact]
-        public void GetEvents_PaginationPage2_ReturnsTheSecondPage()
+        public async Task GetEvents_PaginationPage2_ReturnsTheSecondPage()
         {
             // Arrange
             var filter = new EventFilter
@@ -389,32 +442,30 @@ namespace CourseProject.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0), TotalSeats = 50}
+                    Event.Create ( "Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 2", new DateTime(2026, 4, 6, 0, 0, 0), new DateTime(2026, 4, 6, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 3", new DateTime(2026, 4, 7, 0, 0, 0), new DateTime(2026, 4, 7, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 4", new DateTime(2026, 4, 8, 0, 0, 0), new DateTime(2026, 4, 8, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 5", new DateTime(2026, 4, 9, 0, 0, 0), new DateTime(2026, 4, 9, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 6", new DateTime(2026, 4, 10, 0, 0, 0), new DateTime(2026, 4, 10, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 7", new DateTime(2026, 4, 11, 0, 0, 0), new DateTime(2026, 4, 11, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 8", new DateTime(2026, 4, 12, 0, 0, 0), new DateTime(2026, 4, 12, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 9", new DateTime(2026, 4, 13, 0, 0, 0), new DateTime(2026, 4, 13, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 10", new DateTime(2026, 4, 14, 0, 0, 0), new DateTime(2026, 4, 14, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 11", new DateTime(2026, 4, 15, 0, 0, 0), new DateTime(2026, 4, 15, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 12", new DateTime(2026, 4, 16, 0, 0, 0), new DateTime(2026, 4, 16, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 13", new DateTime(2026, 4, 17, 0, 0, 0), new DateTime(2026, 4, 17, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 14", new DateTime(2026, 4, 18, 0, 0, 0), new DateTime(2026, 4, 18, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 15", new DateTime(2026, 4, 19, 0, 0, 0), new DateTime(2026, 4, 19, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 16", new DateTime(2026, 4, 20, 0, 0, 0), new DateTime(2026, 4, 20, 1, 0, 0), 50)
 
                 };
 
-            _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
-
-            _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
+            _context.Events.AddRange(allEvents);
+            await _context.SaveChangesAsync();
 
             // Act
-            var result = _service.GetEvents(filter);
+            var result = await _eventService.GetEventsAsync(filter);
 
             // Assert
             Assert.NotNull(result);
@@ -424,7 +475,7 @@ namespace CourseProject.Tests
         }
 
         [Fact]
-        public void GetEvents_PaginationPageSize2_Returns2Items()
+        public async Task GetEvents_PaginationPageSize2_Returns2Items()
         {
             // Arrange
             var filter = new EventFilter
@@ -434,32 +485,30 @@ namespace CourseProject.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0), TotalSeats = 50}
+                    Event.Create ( "Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 2", new DateTime(2026, 4, 6, 0, 0, 0), new DateTime(2026, 4, 6, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 3", new DateTime(2026, 4, 7, 0, 0, 0), new DateTime(2026, 4, 7, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 4", new DateTime(2026, 4, 8, 0, 0, 0), new DateTime(2026, 4, 8, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 5", new DateTime(2026, 4, 9, 0, 0, 0), new DateTime(2026, 4, 9, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 6", new DateTime(2026, 4, 10, 0, 0, 0), new DateTime(2026, 4, 10, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 7", new DateTime(2026, 4, 11, 0, 0, 0), new DateTime(2026, 4, 11, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 8", new DateTime(2026, 4, 12, 0, 0, 0), new DateTime(2026, 4, 12, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 9", new DateTime(2026, 4, 13, 0, 0, 0), new DateTime(2026, 4, 13, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 10", new DateTime(2026, 4, 14, 0, 0, 0), new DateTime(2026, 4, 14, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 11", new DateTime(2026, 4, 15, 0, 0, 0), new DateTime(2026, 4, 15, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 12", new DateTime(2026, 4, 16, 0, 0, 0), new DateTime(2026, 4, 16, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 13", new DateTime(2026, 4, 17, 0, 0, 0), new DateTime(2026, 4, 17, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 14", new DateTime(2026, 4, 18, 0, 0, 0), new DateTime(2026, 4, 18, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 15", new DateTime(2026, 4, 19, 0, 0, 0), new DateTime(2026, 4, 19, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 16", new DateTime(2026, 4, 20, 0, 0, 0), new DateTime(2026, 4, 20, 1, 0, 0), 50)
 
                 };
 
-            _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
+            _context.Events.AddRange(allEvents);
+            await _context.SaveChangesAsync();
 
-            _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
-
-            // Act
-            var result = _service.GetEvents(filter);
+            //Act
+            var result = await _eventService.GetEventsAsync(filter);
 
             // Assert
             Assert.NotNull(result);
@@ -470,7 +519,7 @@ namespace CourseProject.Tests
         }
 
         [Fact]
-        public void GetEvents_PaginationPage2PageSize2_Returns2ItemsFromSecondPage()
+        public async Task GetEvents_PaginationPage2PageSize2_Returns2ItemsFromSecondPage()
         {
             // Arrange
             var filter = new EventFilter
@@ -481,32 +530,30 @@ namespace CourseProject.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0), TotalSeats = 50}
+                    Event.Create ( "Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 2", new DateTime(2026, 4, 6, 0, 0, 0), new DateTime(2026, 4, 6, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 3", new DateTime(2026, 4, 7, 0, 0, 0), new DateTime(2026, 4, 7, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 4", new DateTime(2026, 4, 8, 0, 0, 0), new DateTime(2026, 4, 8, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 5", new DateTime(2026, 4, 9, 0, 0, 0), new DateTime(2026, 4, 9, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 6", new DateTime(2026, 4, 10, 0, 0, 0), new DateTime(2026, 4, 10, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 7", new DateTime(2026, 4, 11, 0, 0, 0), new DateTime(2026, 4, 11, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 8", new DateTime(2026, 4, 12, 0, 0, 0), new DateTime(2026, 4, 12, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 9", new DateTime(2026, 4, 13, 0, 0, 0), new DateTime(2026, 4, 13, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 10", new DateTime(2026, 4, 14, 0, 0, 0), new DateTime(2026, 4, 14, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 11", new DateTime(2026, 4, 15, 0, 0, 0), new DateTime(2026, 4, 15, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 12", new DateTime(2026, 4, 16, 0, 0, 0), new DateTime(2026, 4, 16, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 13", new DateTime(2026, 4, 17, 0, 0, 0), new DateTime(2026, 4, 17, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 14", new DateTime(2026, 4, 18, 0, 0, 0), new DateTime(2026, 4, 18, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 15", new DateTime(2026, 4, 19, 0, 0, 0), new DateTime(2026, 4, 19, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 16", new DateTime(2026, 4, 20, 0, 0, 0), new DateTime(2026, 4, 20, 1, 0, 0), 50)
 
                 };
 
-            _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
+            _context.Events.AddRange(allEvents);
+            await _context.SaveChangesAsync();
 
-            _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
-
-            // Act
-            var result = _service.GetEvents(filter);
+            //Act
+            var result = await _eventService.GetEventsAsync(filter);
 
             // Assert
             Assert.NotNull(result);
@@ -517,7 +564,7 @@ namespace CourseProject.Tests
         }
 
         [Fact]
-        public void GetEvents_CombinedFiltration_ReturnsFirst10Results()
+        public async Task GetEvents_CombinedFiltration_ReturnsFirst10Results()
         {
             // Arrange
             var filter = new EventFilter
@@ -529,32 +576,30 @@ namespace CourseProject.Tests
 
             var allEvents = new List<Event>
                 {
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 1", StartAt=new DateTime(2026, 4, 5, 0, 0, 0), EndAt=new DateTime(2026, 4, 5, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 2", StartAt=new DateTime(2026, 4, 6, 0, 0, 0), EndAt=new DateTime(2026, 4, 6, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 3", StartAt=new DateTime(2026, 4, 7, 0, 0, 0), EndAt=new DateTime(2026, 4, 7, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 4", StartAt=new DateTime(2026, 4, 8, 0, 0, 0), EndAt=new DateTime(2026, 4, 8, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 5", StartAt=new DateTime(2026, 4, 9, 0, 0, 0), EndAt=new DateTime(2026, 4, 9, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 6", StartAt=new DateTime(2026, 4, 10, 0, 0, 0), EndAt=new DateTime(2026, 4, 10, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 7", StartAt=new DateTime(2026, 4, 11, 0, 0, 0), EndAt=new DateTime(2026, 4, 11, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 8", StartAt=new DateTime(2026, 4, 12, 0, 0, 0), EndAt=new DateTime(2026, 4, 12, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 9", StartAt=new DateTime(2026, 4, 13, 0, 0, 0), EndAt=new DateTime(2026, 4, 13, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 10", StartAt=new DateTime(2026, 4, 14, 0, 0, 0), EndAt=new DateTime(2026, 4, 14, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 11", StartAt=new DateTime(2026, 4, 15, 0, 0, 0), EndAt=new DateTime(2026, 4, 15, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 12", StartAt=new DateTime(2026, 4, 16, 0, 0, 0), EndAt=new DateTime(2026, 4, 16, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 13", StartAt=new DateTime(2026, 4, 17, 0, 0, 0), EndAt=new DateTime(2026, 4, 17, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 14", StartAt=new DateTime(2026, 4, 18, 0, 0, 0), EndAt=new DateTime(2026, 4, 18, 1, 0, 0), TotalSeats = 50},
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 15", StartAt=new DateTime(2026, 4, 19, 0, 0, 0), EndAt=new DateTime(2026, 4, 19, 1, 0, 0), TotalSeats = 50 },
-                    new Event { Id = Guid.NewGuid(), Title = "Test Event 16", StartAt=new DateTime(2026, 4, 20, 0, 0, 0), EndAt=new DateTime(2026, 4, 20, 1, 0, 0), TotalSeats = 50}
+                    Event.Create ( "Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0), new DateTime(2026, 4, 5, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 2", new DateTime(2026, 4, 6, 0, 0, 0), new DateTime(2026, 4, 6, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 3", new DateTime(2026, 4, 7, 0, 0, 0), new DateTime(2026, 4, 7, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 4", new DateTime(2026, 4, 8, 0, 0, 0), new DateTime(2026, 4, 8, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 5", new DateTime(2026, 4, 9, 0, 0, 0), new DateTime(2026, 4, 9, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 6", new DateTime(2026, 4, 10, 0, 0, 0), new DateTime(2026, 4, 10, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 7", new DateTime(2026, 4, 11, 0, 0, 0), new DateTime(2026, 4, 11, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 8", new DateTime(2026, 4, 12, 0, 0, 0), new DateTime(2026, 4, 12, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 9", new DateTime(2026, 4, 13, 0, 0, 0), new DateTime(2026, 4, 13, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 10", new DateTime(2026, 4, 14, 0, 0, 0), new DateTime(2026, 4, 14, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 11", new DateTime(2026, 4, 15, 0, 0, 0), new DateTime(2026, 4, 15, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 12", new DateTime(2026, 4, 16, 0, 0, 0), new DateTime(2026, 4, 16, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 13", new DateTime(2026, 4, 17, 0, 0, 0), new DateTime(2026, 4, 17, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 14", new DateTime(2026, 4, 18, 0, 0, 0), new DateTime(2026, 4, 18, 1, 0, 0), 50),
+                    Event.Create ( "Test Event 15", new DateTime(2026, 4, 19, 0, 0, 0), new DateTime(2026, 4, 19, 1, 0, 0), 50 ),
+                    Event.Create ( "Test Event 16", new DateTime(2026, 4, 20, 0, 0, 0), new DateTime(2026, 4, 20, 1, 0, 0), 50)
 
                 };
 
-            _repositoryMock.Setup(r => r.GetAll()).Returns(allEvents);
+            _context.Events.AddRange(allEvents);
+            await _context.SaveChangesAsync();
 
-            _mapperMock.Setup(m => m.EntityToDto(It.IsAny<Event>()))
-                       .Returns((Event src) => new EventDto { Id = src.Id, Title = src.Title, Description = src.Description, StartAt = src.StartAt, EndAt = src.EndAt });
-
-            // Act
-            var result = _service.GetEvents(filter);
+            //Act
+            var result = await _eventService.GetEventsAsync(filter);
 
             // Assert
             Assert.NotNull(result);

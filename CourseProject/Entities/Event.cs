@@ -59,12 +59,17 @@ namespace CourseProject.Entities
            string? title,
            DateTime? startAt,
            DateTime? endAt,
+           int totalSeats,
            string? description = null)
         {
+            var oldTotal = TotalSeats;
+
             Title = title!;
             StartAt = startAt!.Value;
             EndAt = endAt!.Value;
             Description = description;
+            TotalSeats= totalSeats;
+            AvailableSeats = TotalSeats - (oldTotal - AvailableSeats);
         }
 
         public bool TryReserveSeats(int count = 1)

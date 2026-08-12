@@ -31,13 +31,14 @@ namespace CourseProject.Services
 
         public async Task<Event?> GetEventByIdAsync(Guid id)
         {
-            return await _context.Events.FirstOrDefaultAsync(o=>o.Id==id);
+            return await _context.Events.FirstOrDefaultAsync(o => o.Id == id);
         }
 
         public async Task<Event> CreateEventAsync(Event @event)
         {
             ValidateEvent(@event);
             @event.AvailableSeats = @event.TotalSeats;
+            @event.Id = Guid.NewGuid();
             await _context.Events.AddAsync(@event);
             await _context.SaveChangesAsync();
             return @event;
@@ -47,18 +48,30 @@ namespace CourseProject.Services
         {
             ValidateEvent(@event);
 
-            var eventToUpdate = await GetEventByIdAsync(@event.Id);
-            if (eventToUpdate == null)
+            var currentDbEvent = await _context.Events
+                                        .AsNoTracking()
+                                        .FirstOrDefaultAsync(e => e.Id == @event.Id);
+
+            if (currentDbEvent == null)
             {
                 throw new EventNotFoundException();
             }
 
-            eventToUpdate.Update(@event.Title, @event.StartAt, @event.EndAt, @event.Description);
+            int bookedSeats = currentDbEvent.TotalSeats - currentDbEvent.AvailableSeats;
+
+            if (@event.TotalSeats - bookedSeats < 0)
+            {
+                throw new InvalidEventDataException();
+
+            }
+
+            @event.AvailableSeats = @event.TotalSeats - bookedSeats;
+            _context.Events.Update(@event);
 
             await _context.SaveChangesAsync();
 
 
-            return eventToUpdate;
+            return @event;
         }
 
         public async Task DeleteEventAsync(Guid? id)
@@ -132,6 +145,7 @@ namespace CourseProject.Services
             {
                 throw new InvalidEventDataException();
             }
+
         }
 
     }

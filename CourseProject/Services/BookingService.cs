@@ -12,9 +12,12 @@ namespace CourseProject.Services
 
         private readonly AppDbContext _context;
 
-        public BookingService(AppDbContext context)
+        private readonly IEventService _eventService;
+
+        public BookingService(AppDbContext context, IEventService eventService)
         {
             _context = context;
+            _eventService = eventService;
         }
 
 
@@ -29,7 +32,7 @@ namespace CourseProject.Services
 
             try
             {
-                var @event = await _context.Events.FirstOrDefaultAsync(o => o.Id == eventId);
+                var @event = await _eventService.GetEventByIdAsync((Guid)eventId);
 
                 if (@event == null)
                 {
@@ -56,7 +59,7 @@ namespace CourseProject.Services
 
         public async Task<Booking?> GetBookingByIdAsync(Guid bookingId)
         {
-            return await _context.Bookings.FirstOrDefaultAsync(o=>o.Id==bookingId);
+            return await _context.Bookings.FirstOrDefaultAsync(o => o.Id == bookingId);
         }
 
     }

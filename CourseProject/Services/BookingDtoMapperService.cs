@@ -8,14 +8,8 @@ namespace CourseProject.Services
     {
         public Booking DtoToEntity(BookingDto bookingDto)
         {
-            Booking booking = new()
-            {
-                Id = bookingDto.Id,
-                EventId = bookingDto.EventId,
-                Status = (Entities.BookingStatus)bookingDto.Status,
-                CreatedAt = bookingDto.CreatedAt,
-                ProcessedAt = bookingDto.ProcessedAt
-            };
+            Booking booking = new(bookingDto.Id, bookingDto.EventId, (Entities.BookingStatus)bookingDto.Status, bookingDto.CreatedAt) { };
+            
             return booking;
         }
 
