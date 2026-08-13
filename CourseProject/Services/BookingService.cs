@@ -10,14 +10,14 @@ namespace CourseProject.Services
     {
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        private readonly AppDbContext _context;
-
         private readonly IEventService _eventService;
 
-        public BookingService(AppDbContext context, IEventService eventService)
+        private readonly IBookingRepository _bookingRepository;
+
+        public BookingService(IEventService eventService, IBookingRepository bookingRepository)
         {
-            _context = context;
             _eventService = eventService;
+            _bookingRepository = bookingRepository;
         }
 
 
@@ -42,8 +42,7 @@ namespace CourseProject.Services
                 if (@event.TryReserveSeats())
                 {
                     var booking = Booking.CreatePending(@event.Id);
-                    await _context.Bookings.AddAsync(booking);
-                    await _context.SaveChangesAsync();
+                    await _bookingRepository.CreateAsync(booking);
                     return booking;
                 }
                 else
@@ -59,7 +58,7 @@ namespace CourseProject.Services
 
         public async Task<Booking?> GetBookingByIdAsync(Guid bookingId)
         {
-            return await _context.Bookings.FirstOrDefaultAsync(o => o.Id == bookingId);
+            return await _bookingRepository.GetByIdAsync(bookingId);
         }
 
     }

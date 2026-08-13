@@ -3,22 +3,23 @@ using CourseProject.Entities;
 using CourseProject.Exceptions;
 using CourseProject.Interfaces;
 using CourseProject.Models;
+using CourseProject.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace CourseProject.Services
 {
     public class EventService : IEventService
     {
-        private readonly AppDbContext _context;
+        private readonly IEventRepository _eventRepository;
 
-        public EventService(AppDbContext context, IEventDtoMapperService eventDtoMapperService)
+        public EventService(IEventRepository eventRepository, IEventDtoMapperService eventDtoMapperService)
         {
-            _context = context;
+            _eventRepository = eventRepository;
         }
 
         public async Task<List<Event>?> GetAllEventsAsync()
         {
-            var events = await _context.Events.ToListAsync();
+            var events = await _eventRepository.GetAllAsync();
             return events;
         }
 
@@ -31,7 +32,7 @@ namespace CourseProject.Services
 
         public async Task<Event?> GetEventByIdAsync(Guid id)
         {
-            return await _context.Events.FirstOrDefaultAsync(o => o.Id == id);
+            return await _eventRepository.GetByIdAsync(id);
         }
 
         public async Task<Event> CreateEventAsync(Event @event)
@@ -39,8 +40,7 @@ namespace CourseProject.Services
             ValidateEvent(@event);
             @event.AvailableSeats = @event.TotalSeats;
             @event.Id = Guid.NewGuid();
-            await _context.Events.AddAsync(@event);
-            await _context.SaveChangesAsync();
+            await _eventRepository.CreateAsync(@event);
             return @event;
         }
 
@@ -48,9 +48,7 @@ namespace CourseProject.Services
         {
             ValidateEvent(@event);
 
-            var currentDbEvent = await _context.Events
-                                        .AsNoTracking()
-                                        .FirstOrDefaultAsync(e => e.Id == @event.Id);
+            var currentDbEvent = await _eventRepository.GetByIdAsync(@event.Id);
 
             if (currentDbEvent == null)
             {
@@ -66,10 +64,15 @@ namespace CourseProject.Services
             }
 
             @event.AvailableSeats = @event.TotalSeats - bookedSeats;
-            _context.Events.Update(@event);
 
-            await _context.SaveChangesAsync();
+            currentDbEvent.Title = @event.Title; 
+            currentDbEvent.StartAt = @event.StartAt;
+            currentDbEvent.EndAt = @event.EndAt;
+            currentDbEvent.TotalSeats = @event.TotalSeats;
+            currentDbEvent.AvailableSeats = @event.AvailableSeats;
+            currentDbEvent.Description = @event.Description;
 
+            await _eventRepository.UpdateAsync(currentDbEvent);
 
             return @event;
         }
@@ -82,8 +85,7 @@ namespace CourseProject.Services
             }
             var @event = await GetEventByIdAsync((Guid)id);
             if (@event == null) { return; }
-            _context.Events.Remove(@event);
-            await _context.SaveChangesAsync();
+            await _eventRepository.DeleteAsync((Guid)id);
         }
 
         public PaginatedResult FilterEvents(List<Event> events, EventFilter filter)

@@ -5,14 +5,14 @@ namespace CourseProject.Interfaces
 {
     public interface IEventRepository
     {
-        List<Event> GetAll();
+        Task<List<Event>> GetAllAsync();
 
-        Event? GetById(Guid id);
+        Task<Event?> GetByIdAsync(Guid id);
 
-        Event Create(Event @event);
+        Task<Event> CreateAsync(Event @event);
 
-        Event? Update(Event @event);
+        Task<Event?> UpdateAsync(Event @event);
 
-        bool Delete(Guid id);
+        Task<bool> DeleteAsync(Guid id);
     }
 }

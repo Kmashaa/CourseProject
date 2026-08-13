@@ -1,5 +1,6 @@
 ﻿using CourseProject.DataAccess;
 using CourseProject.Interfaces;
+using CourseProject.Repositories;
 using CourseProject.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +25,9 @@ namespace CourseProject.Extensions
             services.AddSingleton<IEventDtoMapperService, EventDtoMapperService>();
             services.AddSingleton<IBookingDtoMapperService, BookingDtoMapperService>();
             services.AddHostedService<BookingProcessingService>();
+            services.AddScoped<IEventRepository, EventRepository>();
+            services.AddScoped<IBookingRepository, BookingRepository>();
+
             return services;
 
         }

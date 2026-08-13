@@ -1,6 +1,7 @@
 ﻿using CourseProject.DataAccess;
 using CourseProject.Entities;
 using CourseProject.Interfaces;
+using System.Runtime.InteropServices;
 
 namespace CourseProject.Services
 {
@@ -31,11 +32,8 @@ namespace CourseProject.Services
                     using (var scope = _scopeFactory.CreateScope())
                     {
                         stoppingToken.ThrowIfCancellationRequested();
-                        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        pendingBookings = context.Bookings
-                            .Where(b => b.Status == BookingStatus.Pending)
-                            .Select(o=>o.Id)
-                            .ToList();
+                        var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
+                        pendingBookings = await bookingRepository.GetPendingsAsync();
                     }
 
                     if (pendingBookings != null)
@@ -63,39 +61,44 @@ namespace CourseProject.Services
             await _processingSemaphore.WaitAsync(stoppingToken);
 
             using var scope = _scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
+            var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
 
             try
             {
 
-                var booking = context.Bookings.FirstOrDefault(o => o.Id == bookingId);
-                var @event = context.Events.FirstOrDefault(o=>o.Id==booking.EventId);
+                var booking = await bookingRepository.GetByIdAsync(bookingId);
+                var @event = await eventRepository.GetByIdAsync(booking.EventId);
 
                 stoppingToken.ThrowIfCancellationRequested();
 
                 if (@event == null)
                 {
                     booking.Reject();
-                    await context.SaveChangesAsync(stoppingToken);
+                    await bookingRepository.UpdateAsync(booking);
+                    //await context.SaveChangesAsync(stoppingToken);
                     _logger.LogWarning($"{DateTime.Now}: Заявка {booking.Id} отклонена");
                 }
                 else
                 {
                     booking.Confirm();
-                    await context.SaveChangesAsync(stoppingToken);
+                    await bookingRepository.UpdateAsync(booking);
+                    //await context.SaveChangesAsync(stoppingToken);
                     _logger.LogInformation($"{DateTime.Now}: Заявка {booking.Id} обработана");
 
                 }
             }
             catch
             {
-                var booking = context.Bookings.FirstOrDefault(o => o.Id == bookingId);
-                var @event = context.Events.FirstOrDefault(o => o.Id == booking.EventId);
+                var booking = await bookingRepository.GetByIdAsync(bookingId);
+                var @event = await eventRepository.GetByIdAsync(booking.EventId);
 
 
                 booking.Reject();
                 @event?.ReleaseSeats();
-                await context.SaveChangesAsync(stoppingToken);
+                //await context.SaveChangesAsync(stoppingToken);
+                bookingRepository.UpdateAsync(booking);
+                eventRepository.UpdateAsync(@event);
                 _logger.LogWarning($"{DateTime.Now}: Заявка {booking.Id} отклонена");
 
             }
