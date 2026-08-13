@@ -51,7 +51,7 @@ namespace CourseProject.Repositories
                 {
                     return false;
                 }
-                _context.Booki.Remove(booking);
+                _context.Bookings.Remove(booking);
                 await _context.SaveChangesAsync();
                 return true;
             }
