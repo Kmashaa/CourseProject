@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CourseProject.Repositories
 {
-    public class EventRepository: IEventRepository
+    public class EventRepository : IEventRepository
     {
         private readonly AppDbContext _context;
 

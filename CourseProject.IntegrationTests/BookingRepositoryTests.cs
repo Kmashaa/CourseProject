@@ -1,13 +1,7 @@
 ﻿using CourseProject.DataAccess;
 using CourseProject.Entities;
-using CourseProject.Interfaces;
 using CourseProject.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Npgsql;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Testcontainers.PostgreSql;
 
 namespace CourseProject.IntegrationTests
@@ -158,7 +152,7 @@ namespace CourseProject.IntegrationTests
 
             var bookingRepository = new BookingRepository(context);
 
-            
+
             // Act assert
 
             var exception = await Assert.ThrowsAsync<DbUpdateException>(async () => await bookingRepository.CreateAsync(booking));
@@ -279,7 +273,7 @@ namespace CourseProject.IntegrationTests
             var bookingFromDb = await bookingRepository.GetByIdAsync(booking.Id);
 
             await using var verifyContext = CreateContext();
-            var verifyBooking = verifyContext.Bookings.FirstOrDefault(o=>o.Id==booking.Id);
+            var verifyBooking = verifyContext.Bookings.FirstOrDefault(o => o.Id == booking.Id);
 
             Assert.NotNull(verifyBooking);
             Assert.Equal(booking.EventId, verifyBooking.EventId);
