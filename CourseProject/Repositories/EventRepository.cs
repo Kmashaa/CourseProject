@@ -1,6 +1,7 @@
 ﻿using CourseProject.DataAccess;
 using CourseProject.Entities;
 using CourseProject.Interfaces;
+using CourseProject.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace CourseProject.Repositories
@@ -57,6 +58,42 @@ namespace CourseProject.Repositories
                 return false;
             }
         }
-        //TODO: filter
+
+        public async Task<PaginatedResult> GetEventsWithFilterAsync(EventFilter filter)
+        {
+            var query = _context.Events.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.Title))
+            {
+                query = query.Where(e => e.Title != null && e.Title.ToLower().Contains(filter.Title.ToLower()));
+            }
+
+            if (filter.From.HasValue)
+            {
+                query = query.Where(e => e.StartAt >= filter.From.Value);
+            }
+
+            if (filter.To.HasValue)
+            {
+                query = query.Where(e => e.EndAt <= filter.To.Value);
+            }
+
+            int totalItems = await query.CountAsync();
+
+            var paginatedEvents = await query
+                .OrderBy(o => o.StartAt)
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
+
+            return new PaginatedResult
+            {
+                TotalItems = totalItems,
+                CurrentPage = filter.Page,
+                Events = paginatedEvents,
+                NumOfItemsOnCurrentPage = paginatedEvents.Count
+            };
+        }
+
     }
 }

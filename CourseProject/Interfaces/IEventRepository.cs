@@ -1,4 +1,5 @@
 ﻿using CourseProject.Entities;
+using CourseProject.Models;
 using System.Xml.Serialization;
 
 namespace CourseProject.Interfaces
@@ -14,5 +15,8 @@ namespace CourseProject.Interfaces
         Task<Event?> UpdateAsync(Event @event);
 
         Task<bool> DeleteAsync(Guid id);
+
+        Task<PaginatedResult> GetEventsWithFilterAsync(EventFilter filter);
+
     }
 }

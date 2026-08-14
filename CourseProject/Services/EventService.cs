@@ -25,8 +25,7 @@ namespace CourseProject.Services
 
         public async Task<PaginatedResult> GetEventsAsync(EventFilter filter)
         {
-            var events = await GetAllEventsAsync();
-            var filteredEvents = FilterEvents(events, filter);
+            var filteredEvents = await _eventRepository.GetEventsWithFilterAsync(filter);
             return filteredEvents;
         }
 
@@ -88,47 +87,7 @@ namespace CourseProject.Services
             await _eventRepository.DeleteAsync((Guid)id);
         }
 
-        public PaginatedResult FilterEvents(List<Event> events, EventFilter filter)
-        {
-            var filtered = events.AsEnumerable();
-
-            if (!string.IsNullOrWhiteSpace(filter.Title))
-            {
-                filtered = filtered.Where(e => e.Title != null &&
-                                               e.Title.Contains(filter.Title, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (filter.From.HasValue)
-            {
-                filtered = filtered.Where(e => e.StartAt >= filter.From.Value);
-            }
-
-            if (filter.To.HasValue)
-            {
-                filtered = filtered.Where(e => e.EndAt <= filter.To.Value);
-            }
-
-            var filteredList = filtered.ToList();
-            int totalItems = filteredList.Count;
-
-            var paginated = filteredList.OrderBy(o => o.StartAt)
-                    .Skip((filter.Page - 1) * filter.PageSize)
-                    .Take(filter.PageSize)
-                    .ToList();
-
-
-            PaginatedResult result = new PaginatedResult()
-            {
-                TotalItems = totalItems,
-                CurrentPage = filter.Page,
-                Events = paginated,
-                NumOfItemsOnCurrentPage = paginated.Count
-            };
-
-            return result;
-
-        }
-
+       
         private void ValidateEvent(Event? @event)
         {
             if (@event == null)
