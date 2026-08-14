@@ -97,8 +97,8 @@ namespace CourseProject.Services
                 booking.Reject();
                 @event?.ReleaseSeats();
                 //await context.SaveChangesAsync(stoppingToken);
-                bookingRepository.UpdateAsync(booking);
-                eventRepository.UpdateAsync(@event);
+                await bookingRepository.UpdateAsync(booking);
+                await eventRepository.UpdateAsync(@event);
                 _logger.LogWarning($"{DateTime.Now}: Заявка {booking.Id} отклонена");
 
             }

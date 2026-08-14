@@ -17,7 +17,10 @@ namespace CourseProject.IntegrationTests
 
         public async Task InitializeAsync()
         {
-            await _postgres.StartAsync(); 
+            await _postgres.StartAsync();
+
+            await using var context = CreateContext();
+            await context.Database.MigrateAsync();
         }
 
         public async Task DisposeAsync()
@@ -38,8 +41,6 @@ namespace CourseProject.IntegrationTests
         private async Task ResetDatabaseAsync()
         {
             await using var context = CreateContext();
-
-            await context.Database.MigrateAsync();
 
             await context.Database.ExecuteSqlRawAsync(
                 "TRUNCATE TABLE events, bookings RESTART IDENTITY CASCADE");
@@ -105,7 +106,7 @@ namespace CourseProject.IntegrationTests
             // Act assert
             await eventRepository.CreateAsync(@event);
 
-            var exception = Assert.ThrowsAsync<DbUpdateException>(async () => await eventRepository.CreateAsync(@event2));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await eventRepository.CreateAsync(@event2));
             await using var verifyContext = CreateContext();
             var count = verifyContext.Events
                 .Count(b => b.Id == @event.Id);
@@ -143,7 +144,7 @@ namespace CourseProject.IntegrationTests
             var eventRepository = new EventRepository(context);
 
             // Act assert
-           var events = await eventRepository.GetAllAsync();
+            var events = await eventRepository.GetAllAsync();
 
             await using var verifyContext = CreateContext();
             var verifyEvents = verifyContext.Events.ToList();
@@ -201,7 +202,7 @@ namespace CourseProject.IntegrationTests
             var eventFromDb = await eventRepository.GetByIdAsync(@event.Id);
 
             await using var verifyContext = CreateContext();
-            var verifyEvent = verifyContext.Events.FirstOrDefault(o=>o.Id==@event.Id);
+            var verifyEvent = verifyContext.Events.FirstOrDefault(o => o.Id == @event.Id);
 
             Assert.Equal(eventFromDb.Id, verifyEvent.Id);
             Assert.NotNull(eventFromDb);
@@ -306,7 +307,7 @@ namespace CourseProject.IntegrationTests
 
             // Act assert
 
-            var exception = Assert.ThrowsAsync<DbUpdateException>(async () => await eventRepository.UpdateAsync(@event));
+            var exception = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(async () => await eventRepository.UpdateAsync(@event));
             await using var verifyContext = CreateContext();
             var count = verifyContext.Events
                 .Count(b => b.Id == @event.Id);
@@ -342,7 +343,7 @@ namespace CourseProject.IntegrationTests
             var saved = await verifyContext.Events
                 .FirstOrDefaultAsync(b => b.Id == @event.Id);
 
-            Assert.Equal(true, deleted);
+            Assert.True(deleted);
             Assert.Null(saved);
         }
 
@@ -371,7 +372,7 @@ namespace CourseProject.IntegrationTests
             var saved = await verifyContext.Events
                 .FirstOrDefaultAsync(b => b.Id == @event.Id);
 
-            Assert.Equal(false, deleted);
+            Assert.False(deleted);
             Assert.Null(saved);
         }
 
@@ -422,7 +423,7 @@ namespace CourseProject.IntegrationTests
             context.Events.AddRange(allEvents);
             await context.SaveChangesAsync();
 
-            
+
             var eventRepository = new EventRepository(context);
 
             // Act assert
@@ -777,7 +778,7 @@ namespace CourseProject.IntegrationTests
             var result = await eventRepository.GetEventsWithFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(2, result.TotalItems);
-            Assert.Equal(1, result.Events.Count);
+            Assert.Single(result.Events);
             Assert.Contains(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 14")?.Id);
             Assert.DoesNotContain(result.Events, x => x.Id == allEvents.FirstOrDefault(o => o.Title == "Test Event 4")?.Id);
         }

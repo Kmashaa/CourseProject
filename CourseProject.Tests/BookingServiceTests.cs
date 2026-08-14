@@ -254,8 +254,6 @@ namespace CourseProject.Tests
             {
             }
 
-            booking.Confirm();
-
             var result = await _bookingService.GetBookingByIdAsync(targetBookingId);
 
             // Assert
@@ -286,7 +284,6 @@ namespace CourseProject.Tests
                 .Setup(service => service.GetEventByIdAsync(eventGuid))
                 .ReturnsAsync(existingEvent);
 
-            var bookingCounter = 0;
             _bookingRepositoryMock
                 .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
                 .ReturnsAsync((Booking b) =>
@@ -501,22 +498,21 @@ namespace CourseProject.Tests
             _eventServiceMock.Verify(service => service.GetEventByIdAsync(nonExistingEventId), Times.Once);
         }
 
+        [Fact]
         public void Confirm_WhenCalled_ShouldSetStatusToConfirmedAndPopulateProcessedAt()
         {
             // Arrange
             var bookingId = Guid.NewGuid();
             var eventId = Guid.NewGuid();
 
-            var createdAt = DateTime.UtcNow.AddMinutes(-5);
-
             var booking = new Booking(
                 id: bookingId,
                 eventId: eventId,
                 status: BookingStatus.Pending,
-                createdAt: createdAt
+                createdAt: DateTime.Now.AddMinutes(-5)
             );
 
-            var testStartTime = DateTime.UtcNow;
+            var testStartTime = DateTime.Now;
 
             // Act
             booking.Confirm();
@@ -527,7 +523,7 @@ namespace CourseProject.Tests
             Assert.NotNull(booking.ProcessedAt);
 
             Assert.True(booking.ProcessedAt >= testStartTime);
-            Assert.True(booking.ProcessedAt <= DateTime.UtcNow);
+            Assert.True(booking.ProcessedAt <= DateTime.Now);
         }
 
         [Fact]

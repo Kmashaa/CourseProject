@@ -64,7 +64,7 @@ namespace CourseProject.Services
 
             @event.AvailableSeats = @event.TotalSeats - bookedSeats;
 
-            currentDbEvent.Title = @event.Title; 
+            currentDbEvent.Title = @event.Title;
             currentDbEvent.StartAt = @event.StartAt;
             currentDbEvent.EndAt = @event.EndAt;
             currentDbEvent.TotalSeats = @event.TotalSeats;
@@ -76,18 +76,16 @@ namespace CourseProject.Services
             return @event;
         }
 
-        public async Task DeleteEventAsync(Guid? id)
+        public async Task<bool> DeleteEventAsync(Guid? id)
         {
             if (id == null)
             {
                 throw new InvalidEventDataException();
             }
-            var @event = await GetEventByIdAsync((Guid)id);
-            if (@event == null) { return; }
-            await _eventRepository.DeleteAsync((Guid)id);
+            return await _eventRepository.DeleteAsync((Guid)id);
         }
 
-       
+
         private void ValidateEvent(Event? @event)
         {
             if (@event == null)

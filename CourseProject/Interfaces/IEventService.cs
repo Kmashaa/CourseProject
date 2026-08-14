@@ -15,7 +15,7 @@ namespace CourseProject.Interfaces
 
         Task<Event> UpdateEventAsync(Event @event);
 
-        Task DeleteEventAsync(Guid? index);
+        Task<bool> DeleteEventAsync(Guid? index);
 
     }
 }

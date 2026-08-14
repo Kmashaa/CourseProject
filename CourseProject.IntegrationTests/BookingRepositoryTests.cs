@@ -21,6 +21,9 @@ namespace CourseProject.IntegrationTests
         public async Task InitializeAsync()
         {
             await _postgres.StartAsync();
+
+            await using var context = CreateContext();
+            await context.Database.MigrateAsync();
         }
 
         public async Task DisposeAsync()
@@ -41,8 +44,6 @@ namespace CourseProject.IntegrationTests
         private async Task ResetDatabaseAsync()
         {
             await using var context = CreateContext();
-
-            await context.Database.MigrateAsync();
 
             await context.Database.ExecuteSqlRawAsync(
                 "TRUNCATE TABLE events, bookings RESTART IDENTITY CASCADE");
@@ -131,7 +132,7 @@ namespace CourseProject.IntegrationTests
 
             // Act assert
 
-            var exception = Assert.ThrowsAsync<DbUpdateException>(async () => await bookingRepository.CreateAsync(booking2));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await bookingRepository.CreateAsync(booking2));
             await using var verifyContext = CreateContext();
             var count = verifyContext.Bookings
                 .Count(b => b.Id == booking.Id);
@@ -160,7 +161,7 @@ namespace CourseProject.IntegrationTests
             
             // Act assert
 
-            var exception = Assert.ThrowsAsync<DbUpdateException>(async () => await bookingRepository.CreateAsync(booking));
+            var exception = await Assert.ThrowsAsync<DbUpdateException>(async () => await bookingRepository.CreateAsync(booking));
             await using var verifyContext = CreateContext();
             var count = verifyContext.Bookings
                 .Count(b => b.Id == booking.Id);
@@ -405,7 +406,7 @@ namespace CourseProject.IntegrationTests
 
             // Act assert
 
-            var exception = Assert.ThrowsAsync<DbUpdateException>(async () => await bookingRepository.UpdateAsync(booking));
+            var exception = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(async () => await bookingRepository.UpdateAsync(booking));
             await using var verifyContext = CreateContext();
             var count = verifyContext.Bookings
                 .Count(b => b.Id == booking.Id);
@@ -453,7 +454,7 @@ namespace CourseProject.IntegrationTests
             var saved = await verifyContext.Bookings
                 .FirstOrDefaultAsync(b => b.Id == booking.Id);
 
-            Assert.Equal(true, deleted);
+            Assert.True(deleted);
             Assert.Null(saved);
         }
 
@@ -491,9 +492,9 @@ namespace CourseProject.IntegrationTests
 
             await using var verifyContext = CreateContext();
             var saved = await verifyContext.Bookings
-                .FirstOrDefaultAsync(b => b.Id == @event.Id);
+                .FirstOrDefaultAsync(b => b.Id == booking.Id);
 
-            Assert.Equal(false, deleted);
+            Assert.False(deleted);
             Assert.Null(saved);
         }
 

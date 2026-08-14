@@ -9,7 +9,7 @@ namespace CourseProject.Services
         public Booking DtoToEntity(BookingDto bookingDto)
         {
             Booking booking = new(bookingDto.Id, bookingDto.EventId, (Entities.BookingStatus)bookingDto.Status, bookingDto.CreatedAt) { };
-            
+
             return booking;
         }
 

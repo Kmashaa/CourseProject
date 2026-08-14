@@ -16,7 +16,8 @@ if (builder.Environment.IsDevelopment())
     });
 }
 
-builder.Services.AddSwaggerGen(options => {
+builder.Services.AddSwaggerGen(options =>
+{
     options.EnableAnnotations();
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";

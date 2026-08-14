@@ -129,8 +129,8 @@ namespace CourseProject.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(newEvent, result);
-            Assert.Equal(newEvent.TotalSeats, result.AvailableSeats); 
-            Assert.NotEqual(Guid.Empty, result.Id); 
+            Assert.Equal(newEvent.TotalSeats, result.AvailableSeats);
+            Assert.NotEqual(Guid.Empty, result.Id);
 
             _eventRepositoryMock.Verify(repo => repo.CreateAsync(newEvent), Times.Once);
         }
@@ -142,7 +142,7 @@ namespace CourseProject.Tests
             var newEvent = Event.Create
             (
                 "Test Event 1",
-                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc), 
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
                 50
             );
@@ -232,9 +232,6 @@ namespace CourseProject.Tests
                 50
             );
 
-            _eventRepositoryMock
-                .Setup(repo => repo.GetByIdAsync(eventToDelete.Id))
-                .ReturnsAsync(eventToDelete);
 
             _eventRepositoryMock
                 .Setup(repo => repo.DeleteAsync(eventToDelete.Id))
@@ -247,7 +244,6 @@ namespace CourseProject.Tests
             // Assert
             Assert.Null(exception);
 
-            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(eventToDelete.Id), Times.Once);
             _eventRepositoryMock.Verify(repo => repo.DeleteAsync(eventToDelete.Id), Times.Once);
         }
 

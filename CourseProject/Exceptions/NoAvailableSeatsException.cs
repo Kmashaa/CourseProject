@@ -20,6 +20,6 @@ namespace CourseProject.Exceptions
         {
             Event = @event;
         }
-    
+
     }
 }

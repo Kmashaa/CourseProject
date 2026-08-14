@@ -55,7 +55,7 @@ namespace CourseProject.Repositories
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch (Exception)
+            catch (DbUpdateException)
             {
                 return false;
             }

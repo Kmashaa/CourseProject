@@ -12,7 +12,7 @@ namespace CourseProject.Interfaces
 
         Task<Event> CreateAsync(Event @event);
 
-        Task<Event?> UpdateAsync(Event @event);
+        Task<Event> UpdateAsync(Event @event);
 
         Task<bool> DeleteAsync(Guid id);
 

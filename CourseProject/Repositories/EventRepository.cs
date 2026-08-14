@@ -33,7 +33,7 @@ namespace CourseProject.Repositories
             return @event;
         }
 
-        public async Task<Event?> UpdateAsync(Event @event)
+        public async Task<Event> UpdateAsync(Event @event)
         {
             _context.Events.Update(@event);
             await _context.SaveChangesAsync();
@@ -53,7 +53,7 @@ namespace CourseProject.Repositories
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch (Exception)
+            catch (DbUpdateException)
             {
                 return false;
             }
