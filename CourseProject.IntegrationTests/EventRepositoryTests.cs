@@ -17,7 +17,7 @@ namespace CourseProject.IntegrationTests
 
         public async Task InitializeAsync()
         {
-            await _postgres.StartAsync();
+            await _postgres.StartAsync(); 
         }
 
         public async Task DisposeAsync()
@@ -32,13 +32,15 @@ namespace CourseProject.IntegrationTests
                 .Options;
 
             var context = new AppDbContext(options);
-            context.Database.EnsureCreated();
             return context;
         }
 
         private async Task ResetDatabaseAsync()
         {
             await using var context = CreateContext();
+
+            await context.Database.MigrateAsync();
+
             await context.Database.ExecuteSqlRawAsync(
                 "TRUNCATE TABLE events, bookings RESTART IDENTITY CASCADE");
         }

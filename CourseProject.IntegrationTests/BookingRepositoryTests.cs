@@ -4,6 +4,7 @@ using CourseProject.Interfaces;
 using CourseProject.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -34,13 +35,15 @@ namespace CourseProject.IntegrationTests
                 .Options;
 
             var context = new AppDbContext(options);
-            context.Database.EnsureCreated();
             return context;
         }
 
         private async Task ResetDatabaseAsync()
         {
             await using var context = CreateContext();
+
+            await context.Database.MigrateAsync();
+
             await context.Database.ExecuteSqlRawAsync(
                 "TRUNCATE TABLE events, bookings RESTART IDENTITY CASCADE");
         }
