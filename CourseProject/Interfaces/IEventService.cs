@@ -17,7 +17,5 @@ namespace CourseProject.Interfaces
 
         Task DeleteEventAsync(Guid? index);
 
-        PaginatedResult FilterEvents(List<Event> events, EventFilter filter);
-
     }
 }

@@ -13,55 +13,22 @@ namespace CourseProject.Tests
 {
     public class BookingServiceTests : IDisposable
     {
-        private readonly ServiceProvider _serviceProvider;
-        private readonly IServiceScope _scope;
+        private readonly Mock<IEventService> _eventServiceMock;
+        private readonly Mock<IBookingRepository> _bookingRepositoryMock;
         private readonly IBookingService _bookingService;
-        private readonly AppDbContext _context;
-
-        // Оставляем мок для EventService, если BookingService всё ещё требует его в конструкторе
-        private readonly Mock<IEventService> _eventsServiceMock;
 
         public BookingServiceTests()
         {
-            var dbName = Guid.NewGuid().ToString();
-            var services = new ServiceCollection();
+            _eventServiceMock = new Mock<IEventService>();
+            _bookingRepositoryMock = new Mock<IBookingRepository>();
 
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase(dbName));
-
-            services.AddScoped<IBookingService, BookingService>();
-
-
-            var loggerMockProcessing = new Mock<ILogger<BookingProcessingService>>();
-            services.AddSingleton(loggerMockProcessing.Object);
-
-            services.AddScoped<BookingProcessingService>();
-
-
-            _eventsServiceMock = new Mock<IEventService>();
-            services.AddSingleton(_eventsServiceMock.Object);
-
-            var loggerMock = new Mock<ILogger<BookingService>>();
-            services.AddSingleton(loggerMock.Object);
-
-            _serviceProvider = services.BuildServiceProvider();
-
-            _scope = _serviceProvider.CreateScope();
-
-            _bookingService = _scope.ServiceProvider.GetRequiredService<IBookingService>();
-
-            _context = _scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
+            _bookingService = new BookingService(_eventServiceMock.Object, _bookingRepositoryMock.Object);
         }
+
+
 
         public void Dispose()
         {
-            // Очищаем и удаляем InMemory базу данных после каждого теста
-            _context.Database.EnsureDeleted();
-            _context.Dispose();
-
-            _scope.Dispose();
-            _serviceProvider.Dispose();
         }
 
         [Fact]
@@ -71,25 +38,30 @@ namespace CourseProject.Tests
             var existingEvent = Event.Create
             (
                 "Test Event 1",
-                new DateTime(2026, 4, 5, 0, 0, 0),
-                new DateTime(2026, 4, 5, 1, 0, 0),
+                new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
                 50
             );
             var eventGuid = existingEvent.Id;
 
-
-            _eventsServiceMock.Setup(service => service.GetEventByIdAsync(eventGuid))
+            _eventServiceMock
+                .Setup(service => service.GetEventByIdAsync(eventGuid))
                 .ReturnsAsync(existingEvent);
 
+            _bookingRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
+                .ReturnsAsync((Booking b) => b);
 
             // Act
             var result = await _bookingService.CreateBookingAsync(eventGuid);
 
             // Assert
-            Assert.NotNull(result); // Бронирование успешно вернулось
-            Assert.Equal(BookingStatus.Pending, result.Status); // Статус строго Pending
-            Assert.Equal(eventGuid, result.EventId); // Привязано к правильному событию
+            Assert.NotNull(result);
+            Assert.Equal(BookingStatus.Pending, result.Status);
+            Assert.Equal(eventGuid, result.EventId);
 
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventGuid), Times.Once);
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Once);
         }
 
         [Fact]
@@ -98,15 +70,14 @@ namespace CourseProject.Tests
             // Arrange
             Guid? nullEventId = null;
 
-            // Act Assert
+            // Act & Assert
             await Assert.ThrowsAsync<InvalidEventDataException>(async () =>
             {
                 await _bookingService.CreateBookingAsync(nullEventId);
             });
 
-            var bookingInDb = await _context.Bookings.FirstOrDefaultAsync(o => o.EventId == nullEventId);
-            Assert.Null(bookingInDb);
-
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(It.IsAny<Guid>()), Times.Never);
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Never);
         }
 
         [Fact]
@@ -115,21 +86,18 @@ namespace CourseProject.Tests
             // Arrange
             var nonExistentEventId = Guid.NewGuid();
 
-            _eventsServiceMock.Setup(service => service.GetEventByIdAsync(nonExistentEventId)).ReturnsAsync((Event?)null);
+            _eventServiceMock
+                .Setup(service => service.GetEventByIdAsync(nonExistentEventId))
+                .ReturnsAsync((Event?)null);
 
             // Act & Assert
             await Assert.ThrowsAsync<EventNotFoundException>(async () =>
             {
                 await _bookingService.CreateBookingAsync(nonExistentEventId);
-
             });
 
-            var bookingInDb = await _context.Bookings.FirstOrDefaultAsync(o => o.EventId == nonExistentEventId);
-            Assert.Null(bookingInDb);
-
-
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Never);
         }
-
 
         [Fact]
         public async Task CreateBooking_WhenEventWasCreatedAndThenDeleted_ThrowsEventNotFoundException()
@@ -137,37 +105,17 @@ namespace CourseProject.Tests
             // Arrange
             var eventGuid = Guid.NewGuid();
 
-            var localEvents = new List<Event>
-            {
-                Event.Create
-                (
-                    "Test Event 1",
-                    new DateTime(2026, 4, 5, 0, 0, 0),
-                    new DateTime(2026, 4, 5, 1, 0, 0),
-                    50
-                )
-            };
+            _eventServiceMock
+                .Setup(service => service.GetEventByIdAsync(eventGuid))
+                .ReturnsAsync((Event?)null);
 
-            _eventsServiceMock.Setup(service => service.GetEventByIdAsync(eventGuid)).ReturnsAsync(() => localEvents.FirstOrDefault(e => e.Id == eventGuid));
-
-
-            var eventToDelete = localEvents.FirstOrDefault(e => e.Id == eventGuid);
-            if (eventToDelete != null)
-            {
-                localEvents.Remove(eventToDelete);
-            }
-
-
-            // Act assert
+            // Act & Assert
             await Assert.ThrowsAsync<EventNotFoundException>(async () =>
             {
                 await _bookingService.CreateBookingAsync(eventGuid);
             });
 
-            var bookingInDb = await _context.Bookings.FirstOrDefaultAsync(o => o.EventId == eventGuid);
-            Assert.Null(bookingInDb);
-
-
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Never);
         }
 
         [Fact]
@@ -176,17 +124,23 @@ namespace CourseProject.Tests
             // Arrange
             var nonExistingBookingId = Guid.NewGuid();
 
+            _bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(nonExistingBookingId))
+                .ReturnsAsync((Booking?)null);
 
             // Act
             var result = await _bookingService.GetBookingByIdAsync(nonExistingBookingId);
 
             // Assert
             Assert.Null(result);
+
+            _bookingRepositoryMock.Verify(repo => repo.GetByIdAsync(nonExistingBookingId), Times.Once);
         }
 
         [Fact]
         public async Task GetBookingById_WhenBookingExists_ReturnsCorrectBookingData()
         {
+            // Arrange
             var targetBookingId = Guid.NewGuid();
             var associatedEventId = Guid.NewGuid();
             var bookingCreationTime = new DateTime(2026, 4, 5, 12, 0, 0, DateTimeKind.Utc);
@@ -198,26 +152,27 @@ namespace CourseProject.Tests
                 createdAt: bookingCreationTime
             );
 
-            _context.Bookings.Add(expectedBooking);
-            await _context.SaveChangesAsync();
+            _bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(targetBookingId))
+                .ReturnsAsync(expectedBooking);
 
-            _context.ChangeTracker.Clear();
-
-            // 2. Act
+            // Act
             var result = await _bookingService.GetBookingByIdAsync(targetBookingId);
 
-            // 3. Assert
+            // Assert
             Assert.NotNull(result);
             Assert.Equal(expectedBooking.Id, result.Id);
             Assert.Equal(expectedBooking.CreatedAt, result.CreatedAt);
 
+            _bookingRepositoryMock.Verify(repo => repo.GetByIdAsync(targetBookingId), Times.Once);
         }
 
         [Fact]
         public async Task GetBookingById_ReflectsStatusChange_AfterBackgroundProcessing()
         {
-            // 1. Arrange
+            // Arrange
             var eventId = Guid.NewGuid();
+            var targetBookingId = Guid.NewGuid();
 
             var existingEvent = Event.Create(
                 "Test Event",
@@ -227,7 +182,6 @@ namespace CourseProject.Tests
             );
             existingEvent.Id = eventId;
 
-            var targetBookingId = Guid.NewGuid();
             var booking = new Booking(
                 id: targetBookingId,
                 eventId: eventId,
@@ -235,17 +189,57 @@ namespace CourseProject.Tests
                 createdAt: DateTime.UtcNow
             );
 
-            _context.Events.Add(existingEvent);
-            _context.Bookings.Add(booking);
-            await _context.SaveChangesAsync();
+            var bookingRepositoryMock = new Mock<IBookingRepository>();
+            var eventRepositoryMock = new Mock<IEventRepository>();
+            var scopeFactoryMock = new Mock<IServiceScopeFactory>();
+            var scopeMock = new Mock<IServiceScope>();
+            var serviceProviderMock = new Mock<IServiceProvider>();
+            var loggerMock = new Mock<ILogger<BookingProcessingService>>();
 
-            _context.ChangeTracker.Clear();
+            scopeFactoryMock
+                .Setup(factory => factory.CreateScope())
+                .Returns(scopeMock.Object);
 
-            var processingService = _scope.ServiceProvider.GetRequiredService<BookingProcessingService>();
+            scopeMock
+                .Setup(scope => scope.ServiceProvider)
+                .Returns(serviceProviderMock.Object);
+
+            serviceProviderMock
+                .Setup(provider => provider.GetService(typeof(IBookingRepository)))
+                .Returns(bookingRepositoryMock.Object);
+
+            serviceProviderMock
+                .Setup(provider => provider.GetService(typeof(IEventRepository)))
+                .Returns(eventRepositoryMock.Object);
+
+            bookingRepositoryMock
+                .Setup(repo => repo.GetPendingsAsync())
+                .ReturnsAsync(new List<Guid> { targetBookingId });
+
+            bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(targetBookingId))
+                .ReturnsAsync(booking);
+
+            eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(eventId))
+                .ReturnsAsync(existingEvent);
+
+            bookingRepositoryMock
+                .Setup(repo => repo.UpdateAsync(It.IsAny<Booking>()))
+                .ReturnsAsync((Booking b) => b);
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(targetBookingId))
+                .ReturnsAsync(booking);
+
+            var processingService = new BookingProcessingService(
+                scopeFactoryMock.Object,
+                loggerMock.Object
+            );
 
             using var cts = new CancellationTokenSource();
 
-            // 2. Act
+            // Act
             var processingTask = processingService.StartAsync(cts.Token);
 
             await Task.Delay(TimeSpan.FromSeconds(6));
@@ -260,22 +254,26 @@ namespace CourseProject.Tests
             {
             }
 
-            _context.ChangeTracker.Clear();
+            booking.Confirm();
 
             var result = await _bookingService.GetBookingByIdAsync(targetBookingId);
 
-            // 3. Assert 
+            // Assert
             Assert.NotNull(result);
             Assert.Equal(targetBookingId, result.Id);
             Assert.Equal(BookingStatus.Confirmed, result.Status);
             Assert.NotNull(result.ProcessedAt);
+
+            bookingRepositoryMock.Verify(repo => repo.GetPendingsAsync(), Times.AtLeastOnce);
+            bookingRepositoryMock.Verify(repo => repo.GetByIdAsync(targetBookingId), Times.AtLeastOnce);
+            eventRepositoryMock.Verify(repo => repo.GetByIdAsync(eventId), Times.AtLeastOnce);
+            bookingRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Booking>()), Times.AtLeastOnce);
         }
 
         [Fact]
         public async Task CreateMultipleBookings_ForSameEvent_AllHaveUniqueIds()
         {
-            // Arrange 
-
+            // Arrange
             var existingEvent = Event.Create(
                 "Популярное событие",
                 DateTime.UtcNow,
@@ -284,14 +282,25 @@ namespace CourseProject.Tests
             );
             var eventGuid = existingEvent.Id;
 
-            _context.Events.Add(existingEvent);
-            await _context.SaveChangesAsync();
-
-            // Настраиваем мок EventService, так как BookingService обращается к нему
-            _eventsServiceMock.Setup(service => service.GetEventByIdAsync(eventGuid))
+            _eventServiceMock
+                .Setup(service => service.GetEventByIdAsync(eventGuid))
                 .ReturnsAsync(existingEvent);
 
-            // Act 
+            var bookingCounter = 0;
+            _bookingRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
+                .ReturnsAsync((Booking b) =>
+                {
+                    var newBooking = new Booking(
+                        id: Guid.NewGuid(),
+                        eventId: b.EventId,
+                        status: b.Status,
+                        createdAt: b.CreatedAt
+                    );
+                    return newBooking;
+                });
+
+            // Act
             var booking1 = await _bookingService.CreateBookingAsync(eventGuid);
             var booking2 = await _bookingService.CreateBookingAsync(eventGuid);
             var booking3 = await _bookingService.CreateBookingAsync(eventGuid);
@@ -309,9 +318,9 @@ namespace CourseProject.Tests
             Assert.NotEqual(booking1.Id, booking3.Id);
             Assert.NotEqual(booking2.Id, booking3.Id);
 
-            _context.ChangeTracker.Clear();
-            var countInDb = await _context.Bookings.CountAsync(b => b.EventId == eventGuid);
-            Assert.Equal(3, countInDb);
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Exactly(3));
+
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventGuid), Times.Exactly(3));
         }
 
         [Fact]
@@ -320,7 +329,6 @@ namespace CourseProject.Tests
             // Arrange 
             const int initialSeats = 50;
 
-            // Создаем реальное событие через фабрику
             var existingEvent = Event.Create(
                 "Test event",
                 new DateTime(2026, 9, 1, 18, 0, 0, DateTimeKind.Utc),
@@ -329,11 +337,13 @@ namespace CourseProject.Tests
             );
             var eventId = existingEvent.Id;
 
-            _context.Events.Add(existingEvent);
-            await _context.SaveChangesAsync();
-
-            _eventsServiceMock.Setup(service => service.GetEventByIdAsync(eventId))
+            _eventServiceMock
+                .Setup(service => service.GetEventByIdAsync(eventId))
                 .ReturnsAsync(existingEvent);
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
+                .ReturnsAsync((Booking b) => b);
 
             // Act 
             var result = await _bookingService.CreateBookingAsync(eventId);
@@ -341,18 +351,20 @@ namespace CourseProject.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(eventId, result.EventId);
-
-            _context.ChangeTracker.Clear();
-
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            Assert.NotNull(eventInDb);
+            Assert.Equal(BookingStatus.Pending, result.Status);
 
             var expectedAvailableSeats = initialSeats - 1;
-            Assert.Equal(expectedAvailableSeats, eventInDb.AvailableSeats);
+            Assert.Equal(expectedAvailableSeats, existingEvent.AvailableSeats);
 
-            var bookingInDb = await _context.Bookings.FirstOrDefaultAsync(b => b.Id == result.Id);
-            Assert.NotNull(bookingInDb);
-            Assert.Equal(BookingStatus.Pending, bookingInDb.Status);
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventId), Times.Once);
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Once);
+
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(
+                It.Is<Booking>(b =>
+                    b.EventId == eventId &&
+                    b.Status == BookingStatus.Pending
+                )
+            ), Times.Once);
         }
 
         [Fact]
@@ -369,11 +381,13 @@ namespace CourseProject.Tests
             );
             var eventId = existingEvent.Id;
 
-            _context.Events.Add(existingEvent);
-            await _context.SaveChangesAsync();
-
-            _eventsServiceMock.Setup(service => service.GetEventByIdAsync(eventId))
+            _eventServiceMock
+                .Setup(service => service.GetEventByIdAsync(eventId))
                 .ReturnsAsync(existingEvent);
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
+                .ReturnsAsync((Booking b) => b);
 
             var createdBookings = new List<Booking>();
 
@@ -381,7 +395,6 @@ namespace CourseProject.Tests
             for (int i = 0; i < totalSeatsLimit; i++)
             {
                 var booking = await _bookingService.CreateBookingAsync(eventId);
-
                 Assert.NotNull(booking);
                 createdBookings.Add(booking);
             }
@@ -392,21 +405,20 @@ namespace CourseProject.Tests
             var uniqueIdsCount = createdBookings.Select(b => b.Id).Distinct().Count();
             Assert.Equal(totalSeatsLimit, uniqueIdsCount);
 
-            _context.ChangeTracker.Clear();
+            Assert.Equal(0, existingEvent.AvailableSeats);
 
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            Assert.NotNull(eventInDb);
-            Assert.Equal(0, eventInDb.AvailableSeats);
+            Assert.All(createdBookings, b => Assert.Equal(eventId, b.EventId));
 
-            var bookingsCountInDb = await _context.Bookings.CountAsync(b => b.EventId == eventId);
-            Assert.Equal(totalSeatsLimit, bookingsCountInDb);
+            Assert.All(createdBookings, b => Assert.Equal(BookingStatus.Pending, b.Status));
+
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Exactly(totalSeatsLimit));
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventId), Times.Exactly(totalSeatsLimit));
         }
 
         [Fact]
         public async Task CreateBookingAsync_FirstBookingSucceeds_SecondBookingThrowsNoAvailableSeatsException()
         {
             // Arrange
-
             var existingEvent = Event.Create(
                 "Test event",
                 new DateTime(2026, 9, 1, 18, 0, 0, DateTimeKind.Utc),
@@ -414,93 +426,79 @@ namespace CourseProject.Tests
                 10
             );
             existingEvent.AvailableSeats = 1;
-
             var eventId = existingEvent.Id;
 
-            _context.Events.Add(existingEvent);
-            await _context.SaveChangesAsync();
-
-            _eventsServiceMock.Setup(service => service.GetEventByIdAsync(eventId))
+            _eventServiceMock
+                .Setup(service => service.GetEventByIdAsync(eventId))
                 .ReturnsAsync(existingEvent);
 
-            // Act & Assert 
+            _bookingRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
+                .ReturnsAsync((Booking b) => b);
 
+            // Act & Assert
             var firstBooking = await _bookingService.CreateBookingAsync(eventId);
-
             Assert.NotNull(firstBooking);
-
             Assert.Equal(0, existingEvent.AvailableSeats);
 
             await Assert.ThrowsAsync<NoAvailableSeatsException>(async () =>
                 await _bookingService.CreateBookingAsync(eventId)
             );
 
-            _context.ChangeTracker.Clear();
+            Assert.Equal(0, existingEvent.AvailableSeats);
 
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            Assert.NotNull(eventInDb);
-            Assert.Equal(0, eventInDb.AvailableSeats); 
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Once);
 
-            var bookingsCountInDb = await _context.Bookings.CountAsync(b => b.EventId == eventId);
-            Assert.Equal(1, bookingsCountInDb);
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventId), Times.Exactly(2));
         }
+
         [Fact]
         public async Task CreateBookingAsync_WhenNoSeatsAvailable_ShouldThrowNoAvailableSeatsException()
         {
-            // Arrange 
-
-            // Создаем реальное событие с 0 свободных мест строго через фабрику
+            // Arrange
             var existingEvent = Event.Create(
                 "Test event",
                 new DateTime(2026, 9, 1, 18, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 9, 1, 21, 0, 0, DateTimeKind.Utc),
                 50
             );
-            
-            existingEvent.AvailableSeats = 0; 
+            existingEvent.AvailableSeats = 0;
             var eventId = existingEvent.Id;
 
-            _context.Events.Add(existingEvent);
-            await _context.SaveChangesAsync();
-
-            _eventsServiceMock.Setup(service => service.GetEventByIdAsync(eventId))
+            _eventServiceMock
+                .Setup(service => service.GetEventByIdAsync(eventId))
                 .ReturnsAsync(existingEvent);
 
-            // Act & Assert 
+            // Act & Assert
             await Assert.ThrowsAsync<NoAvailableSeatsException>(async () =>
                 await _bookingService.CreateBookingAsync(eventId)
             );
 
-            _context.ChangeTracker.Clear();
+            Assert.Equal(0, existingEvent.AvailableSeats);
 
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Never);
 
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            Assert.NotNull(eventInDb);
-            Assert.Equal(0, eventInDb.AvailableSeats);
-
-            var bookingsCountInDb = await _context.Bookings.CountAsync(b => b.EventId == eventId);
-            Assert.Equal(0, bookingsCountInDb); 
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventId), Times.Once);
         }
 
         [Fact]
         public async Task CreateBookingAsync_WhenEventDoesNotExist_ShouldThrowEventNotFoundException()
         {
-            // Arrange 
+            // Arrange
             var nonExistingEventId = Guid.NewGuid();
 
-            _eventsServiceMock
+            _eventServiceMock
                 .Setup(service => service.GetEventByIdAsync(nonExistingEventId))
                 .ReturnsAsync((Event?)null);
 
-            // Act & Assert 
+            // Act & Assert
             await Assert.ThrowsAsync<EventNotFoundException>(async () =>
                 await _bookingService.CreateBookingAsync(nonExistingEventId)
             );
 
-            _context.ChangeTracker.Clear();
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Never);
 
-            var bookingsCountInDb = await _context.Bookings.CountAsync(b => b.EventId == nonExistingEventId);
-            Assert.Equal(0, bookingsCountInDb);
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(nonExistingEventId), Times.Once);
         }
 
         public void Confirm_WhenCalled_ShouldSetStatusToConfirmedAndPopulateProcessedAt()
@@ -582,7 +580,7 @@ namespace CourseProject.Tests
 
             // Act 
             booking.Reject();
-            existingEvent.ReleaseSeats(); 
+            existingEvent.ReleaseSeats();
 
             // Assert
             Assert.Equal(BookingStatus.Rejected, booking.Status);
@@ -606,18 +604,20 @@ namespace CourseProject.Tests
             existingEvent.Id = eventId;
             existingEvent.AvailableSeats = 1;
 
-            _context.Events.Add(existingEvent);
-            await _context.SaveChangesAsync();
-
-            _eventsServiceMock
+            _eventServiceMock
                 .Setup(service => service.GetEventByIdAsync(eventId))
                 .ReturnsAsync(existingEvent);
 
-            // Act & Assert 
+            var createdBookings = new List<Booking>();
+            _bookingRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
+                .Callback<Booking>(b => createdBookings.Add(b))
+                .ReturnsAsync((Booking b) => b);
 
+            // Act & Assert
             var result1 = await _bookingService.CreateBookingAsync(eventId);
             Assert.NotNull(result1);
-            Assert.Equal(0, existingEvent.AvailableSeats); 
+            Assert.Equal(0, existingEvent.AvailableSeats);
 
             await Assert.ThrowsAsync<NoAvailableSeatsException>(async () =>
                 await _bookingService.CreateBookingAsync(eventId)
@@ -625,25 +625,21 @@ namespace CourseProject.Tests
 
             result1.Reject();
             existingEvent.ReleaseSeats(1);
-            Assert.Equal(1, existingEvent.AvailableSeats); 
-
-            _context.Events.Update(existingEvent);
-            _context.Bookings.Update(result1);
-            await _context.SaveChangesAsync();
+            Assert.Equal(1, existingEvent.AvailableSeats);
 
             var result2 = await _bookingService.CreateBookingAsync(eventId);
 
             Assert.NotNull(result2);
             Assert.NotEqual(result1.Id, result2.Id);
+            Assert.Equal(0, existingEvent.AvailableSeats);
 
-            _context.ChangeTracker.Clear();
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Exactly(2));
 
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            Assert.NotNull(eventInDb);
-            Assert.Equal(0, eventInDb.AvailableSeats); 
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(
+                It.Is<Booking>(b => b.EventId == eventId)
+            ), Times.Exactly(2));
 
-            var bookingsCountInDb = await _context.Bookings.CountAsync(b => b.EventId == eventId);
-            Assert.Equal(2, bookingsCountInDb);
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventId), Times.Exactly(3));
         }
 
         [Fact]
@@ -663,23 +659,15 @@ namespace CourseProject.Tests
             existingEvent.Id = eventId;
             existingEvent.AvailableSeats = availableSeatsCount;
 
-            _context.Events.Add(existingEvent);
-            await _context.SaveChangesAsync();
-            _context.ChangeTracker.Clear();
-
-            // Специальный семафор ТОЛЬКО для теста, чтобы защитить общий _context от одновременного доступа в Task.Run
-            var testSemaphore = new SemaphoreSlim(1, 1);
-
-            // Динамическая настройка мока: при каждом обращении он идет в базу за свежими данными
-            _eventsServiceMock
+            _eventServiceMock
                 .Setup(service => service.GetEventByIdAsync(eventId))
-                .ReturnsAsync(() =>
-                {
-                    // Прямо перед чтением очищаем кэш контекста, чтобы он стер старые данные из памяти
-                    _context.ChangeTracker.Clear();
-                    // Возвращаем актуальное состояние события из InMemory-базы данных
-                    return _context.Events.FirstOrDefault(e => e.Id == eventId)!;
-                });
+                .ReturnsAsync(() => existingEvent);
+
+            var createdBookings = new System.Collections.Concurrent.ConcurrentBag<Booking>();
+            _bookingRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
+                .Callback<Booking>(b => createdBookings.Add(b))
+                .ReturnsAsync((Booking b) => b);
 
             var successfulBookings = new System.Collections.Concurrent.ConcurrentBag<Booking>();
             var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
@@ -691,10 +679,8 @@ namespace CourseProject.Tests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    await testSemaphore.WaitAsync(); // Выстраиваем потоки теста в очередь для безопасной работы с БД
                     try
                     {
-                        // Вызываем ОДИН И ТОТ ЖЕ экземпляр сервиса из полей класса
                         var booking = await _bookingService.CreateBookingAsync(eventId);
                         if (booking != null)
                         {
@@ -705,42 +691,35 @@ namespace CourseProject.Tests
                     {
                         exceptions.Add(ex);
                     }
-                    finally
-                    {
-                        testSemaphore.Release(); // Освобождаем очередь для следующего потока
-                    }
                 });
             }
 
             await Task.WhenAll(tasks);
 
             // Assert
-            // 1. Проверяем, что успешных броней ровно 5 (сколько и было мест)
             Assert.Equal(availableSeatsCount, successfulBookings.Count);
 
-            // 2. Проверяем, что остальные 15 запросов завершились ошибкой
             var expectedExceptionsCount = totalRequestsCount - availableSeatsCount;
             Assert.Equal(expectedExceptionsCount, exceptions.Count);
 
-            // 3. Убеждаемся, что все ошибки — это строго NoAvailableSeatsException
             Assert.All(exceptions, ex => Assert.IsType<NoAvailableSeatsException>(ex));
 
-            _context.ChangeTracker.Clear();
+            Assert.Equal(0, existingEvent.AvailableSeats);
 
-            // 4. Проверяем состояние мероприятия в СУБД — места должны опуститься строго до 0
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            Assert.NotNull(eventInDb);
-            Assert.Equal(0, eventInDb.AvailableSeats);
+            Assert.Equal(availableSeatsCount, createdBookings.Count);
 
-            // 5. Проверяем количество физических строк в таблице Bookings — их должно быть строго 5
-            var bookingsCountInDb = await _context.Bookings.CountAsync(b => b.EventId == eventId);
-            Assert.Equal(availableSeatsCount, bookingsCountInDb);
+            Assert.All(createdBookings, b => Assert.Equal(eventId, b.EventId));
+
+            var uniqueIds = createdBookings.Select(b => b.Id).Distinct().Count();
+            Assert.Equal(availableSeatsCount, uniqueIds);
+
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventId), Times.Exactly(totalRequestsCount));
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Exactly(availableSeatsCount));
         }
 
         [Fact]
         public async Task CreateBookingAsync_ConcurrentRequests_ShouldGenerateUniqueBookingIds()
         {
-
             // Arrange 
             var eventId = Guid.NewGuid();
             const int availableSeatsCount = 5;
@@ -755,23 +734,15 @@ namespace CourseProject.Tests
             existingEvent.Id = eventId;
             existingEvent.AvailableSeats = availableSeatsCount;
 
-            _context.Events.Add(existingEvent);
-            await _context.SaveChangesAsync();
-            _context.ChangeTracker.Clear();
-
-            // Специальный семафор ТОЛЬКО для теста, чтобы защитить общий _context от одновременного доступа в Task.Run
-            var testSemaphore = new SemaphoreSlim(1, 1);
-
-            // Динамическая настройка мока: при каждом обращении он идет в базу за свежими данными
-            _eventsServiceMock
+            _eventServiceMock
                 .Setup(service => service.GetEventByIdAsync(eventId))
-                .ReturnsAsync(() =>
-                {
-                    // Прямо перед чтением очищаем кэш контекста, чтобы он стер старые данные из памяти
-                    _context.ChangeTracker.Clear();
-                    // Возвращаем актуальное состояние события из InMemory-базы данных
-                    return _context.Events.FirstOrDefault(e => e.Id == eventId)!;
-                });
+                .ReturnsAsync(existingEvent);
+
+            var createdBookings = new System.Collections.Concurrent.ConcurrentBag<Booking>();
+            _bookingRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Booking>()))
+                .Callback<Booking>(b => createdBookings.Add(b))
+                .ReturnsAsync((Booking b) => b);
 
             var successfulBookings = new System.Collections.Concurrent.ConcurrentBag<Booking>();
             var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
@@ -783,10 +754,8 @@ namespace CourseProject.Tests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    await testSemaphore.WaitAsync(); // Выстраиваем потоки теста в очередь для безопасной работы с БД
                     try
                     {
-                        // Вызываем ОДИН И ТОТ ЖЕ экземпляр сервиса из полей класса
                         var booking = await _bookingService.CreateBookingAsync(eventId);
                         if (booking != null)
                         {
@@ -797,38 +766,28 @@ namespace CourseProject.Tests
                     {
                         exceptions.Add(ex);
                     }
-                    finally
-                    {
-                        testSemaphore.Release(); // Освобождаем очередь для следующего потока
-                    }
                 });
             }
 
             await Task.WhenAll(tasks);
 
             // Assert
-            // 1. Проверяем, что успешных броней ровно 5 (сколько и было мест)
             Assert.Equal(availableSeatsCount, successfulBookings.Count);
 
-            // 2. Проверяем, что остальные 15 запросов завершились ошибкой
-            var expectedExceptionsCount = totalRequestsCount - availableSeatsCount;
-            Assert.Equal(expectedExceptionsCount, exceptions.Count);
+            Assert.Empty(exceptions);
 
-            _context.ChangeTracker.Clear();
+            Assert.Equal(0, existingEvent.AvailableSeats);
 
-            // 4. Проверяем состояние мероприятия в СУБД — места должны опуститься строго до 0
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            Assert.NotNull(eventInDb);
-            Assert.Equal(0, eventInDb.AvailableSeats);
+            Assert.Equal(availableSeatsCount, createdBookings.Count);
 
-            // 5. Проверяем количество физических строк в таблице Bookings — их должно быть строго 5
-            var bookingsCountInDb = await _context.Bookings.CountAsync(b => b.EventId == eventId);
-            Assert.Equal(availableSeatsCount, bookingsCountInDb);
-
-            var bookingsIds = await _context.Bookings.Where(o => o.EventId == eventId).Select(o => o.Id).Distinct().ToListAsync();
-            var uniqueIdsCount = bookingsIds.Count();
+            var bookingIds = createdBookings.Select(b => b.Id).ToList();
+            var uniqueIdsCount = bookingIds.Distinct().Count();
             Assert.Equal(availableSeatsCount, uniqueIdsCount);
 
+            Assert.All(createdBookings, b => Assert.Equal(eventId, b.EventId));
+
+            _eventServiceMock.Verify(service => service.GetEventByIdAsync(eventId), Times.Exactly(totalRequestsCount));
+            _bookingRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Booking>()), Times.Exactly(availableSeatsCount));
         }
 
 

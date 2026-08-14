@@ -12,69 +12,53 @@ namespace CourseProject.Tests
 {
     public class EventServiceTests : IDisposable
     {
-        //private readonly Mock<IEventRepository> _repositoryMock;
-        //private readonly Mock<IEventDtoMapperService> _mapperMock;
-        //private readonly Services.EventService _service;
-
-        private readonly ServiceProvider _serviceProvider;
-        private readonly IServiceScope _scope;
+        private readonly Mock<IEventRepository> _eventRepositoryMock;
+        private readonly Mock<IEventDtoMapperService> _mapperMock;
         private readonly IEventService _eventService;
-        private readonly AppDbContext _context;
 
         public EventServiceTests()
         {
+            _eventRepositoryMock = new Mock<IEventRepository>();
+            _mapperMock = new Mock<IEventDtoMapperService>();
 
-            var dbName = Guid.NewGuid().ToString();
-            var services = new ServiceCollection();
-
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase(dbName));
-
-            services.AddScoped<IEventService, EventService>();
-
-            var mapperMock = new Mock<IEventDtoMapperService>();
-            services.AddSingleton(mapperMock.Object);
-
-            _serviceProvider = services.BuildServiceProvider();
-
-            _scope = _serviceProvider.CreateScope();
-
-            _eventService = _serviceProvider.GetRequiredService<IEventService>();
-
-            _context = _scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            _eventService = new EventService(_eventRepositoryMock.Object, _mapperMock.Object);
 
         }
 
         // Реализация IDisposable для очистки ресурсов после каждого прогона теста
         public void Dispose()
         {
-            _context.Database.EnsureDeleted();
-            _context.Dispose();
-
-            _scope.Dispose();
-            _serviceProvider.Dispose();
         }
 
         [Fact]
         public async Task GetAllEvents_ReturnsAllEvents()
         {
-            // Arrange 
+            // Arrange
+            var event1 = Event.Create("Test Event 1",
+                new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                50);
 
-            var event1 = Event.Create("Test Event 1", new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc), 50);
-            var event2 = Event.Create("Test Event 2", new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc), 50);
+            var event2 = Event.Create("Test Event 2",
+                new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                50);
 
+            var eventsList = new List<Event> { event1, event2 };
 
-            _context.Events.AddRange(event1, event2);
-            await _context.SaveChangesAsync();
+            _eventRepositoryMock
+                .Setup(repo => repo.GetAllAsync())
+                .ReturnsAsync(eventsList);
 
-            // 2. Act 
+            // Act
             var result = await _eventService.GetAllEventsAsync();
 
-            // 3. Assert (Проверка результатов)
+            // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
             Assert.Equal("Test Event 1", result[0].Title);
 
+            _eventRepositoryMock.Verify(repo => repo.GetAllAsync(), Times.Once);
 
         }
 
@@ -89,9 +73,9 @@ namespace CourseProject.Tests
                 50
             );
 
-            _context.Events.Add(expectedEvent);
-            await _context.SaveChangesAsync();
-
+            _eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(expectedEvent.Id))
+                .ReturnsAsync(expectedEvent);
 
             // Act
             var result = await _eventService.GetEventByIdAsync(expectedEvent.Id);
@@ -100,19 +84,27 @@ namespace CourseProject.Tests
             Assert.NotNull(result);
             Assert.Equal(expectedEvent.Title, result.Title);
             Assert.Equal(expectedEvent.Id, result.Id);
+
+            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(expectedEvent.Id), Times.Once);
         }
 
         [Fact]
-        public async Task GetEventById_NotExistedId_ReturnsNull()
+        public async Task GetEventById_NonExistedId_ReturnsNull()
         {
             // Arrange
-            var notExistedGuid = Guid.NewGuid();
+            var nonExistentId = Guid.NewGuid();
+
+            _eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(nonExistentId))
+                .ReturnsAsync((Event?)null);
 
             // Act
-            var result = await _eventService.GetEventByIdAsync(notExistedGuid);
+            var result = await _eventService.GetEventByIdAsync(nonExistentId);
 
             // Assert
             Assert.Null(result);
+
+            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(nonExistentId), Times.Once);
         }
 
         [Fact]
@@ -127,16 +119,20 @@ namespace CourseProject.Tests
                 50
             );
 
+            _eventRepositoryMock
+                .Setup(repo => repo.CreateAsync(It.IsAny<Event>()))
+                .ReturnsAsync(newEvent); // Теперь возвращаем Event
+
             // Act
             var result = await _eventService.CreateEventAsync(newEvent);
 
             // Assert
-            Assert.Equal(newEvent, result);
             Assert.NotNull(result);
+            Assert.Equal(newEvent, result);
+            Assert.Equal(newEvent.TotalSeats, result.AvailableSeats); 
+            Assert.NotEqual(Guid.Empty, result.Id); 
 
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(o => o.Id == newEvent.Id);
-            Assert.Equal(newEvent.Title, eventInDb.Title);
-            Assert.NotNull(eventInDb);
+            _eventRepositoryMock.Verify(repo => repo.CreateAsync(newEvent), Times.Once);
         }
 
         [Fact]
@@ -146,13 +142,17 @@ namespace CourseProject.Tests
             var newEvent = Event.Create
             (
                 "Test Event 1",
-                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc), 
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
                 50
             );
 
-            // Act Assert
-            var exception = Assert.ThrowsAsync<InvalidEventDataException>(async () => await _eventService.CreateEventAsync(newEvent));
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidEventDataException>(
+                async () => await _eventService.CreateEventAsync(newEvent)
+            );
+
+            _eventRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Event>()), Times.Never);
         }
 
         [Fact]
@@ -166,6 +166,7 @@ namespace CourseProject.Tests
                 new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
                 50
             );
+            eventToUpdate.AvailableSeats = 50;
 
             var newEvent = Event.Create
             (
@@ -174,26 +175,28 @@ namespace CourseProject.Tests
                 new DateTime(2026, 4, 5, 2, 0, 0, DateTimeKind.Utc),
                 60
             );
-
             newEvent.Id = eventToUpdate.Id;
 
-            _context.Events.Add(eventToUpdate);
-            await _context.SaveChangesAsync();
+            _eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(eventToUpdate.Id))
+                .ReturnsAsync(eventToUpdate);
+
+            _eventRepositoryMock
+                .Setup(repo => repo.UpdateAsync(It.IsAny<Event>()))
+                .ReturnsAsync((Event e) => e);
+
             // Act
             var result = await _eventService.UpdateEventAsync(newEvent);
 
             // Assert
-            Assert.Equal(result, newEvent);
+            Assert.NotNull(result);
+            Assert.Equal(newEvent.Title, result.Title);
+            Assert.Equal(newEvent.StartAt, result.StartAt);
+            Assert.Equal(newEvent.EndAt, result.EndAt);
+            Assert.Equal(60, result.AvailableSeats);
 
-            _context.ChangeTracker.Clear();
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(o => o.Id == newEvent.Id);
-
-            Assert.Equal(newEvent.Title, eventInDb.Title);
-            Assert.Equal(newEvent.StartAt, eventInDb.StartAt);
-            Assert.Equal(newEvent.EndAt, eventInDb.EndAt);
-            Assert.Equal(newEvent.AvailableSeats, eventInDb.AvailableSeats);
-
-            Assert.NotNull(eventInDb);
+            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(eventToUpdate.Id), Times.Once);
+            _eventRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Event>()), Times.Once);
         }
 
         [Fact]
@@ -203,14 +206,18 @@ namespace CourseProject.Tests
             var eventToUpdate = Event.Create
             (
                 "Test Event 1",
-                new DateTime(2026, 4, 8, 0, 0, 0),
-                new DateTime(2026, 4, 5, 1, 0, 0),
+                new DateTime(2026, 4, 8, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
                 50
             );
 
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidEventDataException>(
+                async () => await _eventService.UpdateEventAsync(eventToUpdate)
+            );
 
-            // Act Assert
-            var exception = Assert.ThrowsAsync<InvalidEventDataException>(async () => await _eventService.UpdateEventAsync(eventToUpdate));
+            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
+            _eventRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Event>()), Times.Never);
         }
 
         [Fact]
@@ -225,8 +232,13 @@ namespace CourseProject.Tests
                 50
             );
 
-            _context.Events.Add(eventToDelete);
-            await _context.SaveChangesAsync();
+            _eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(eventToDelete.Id))
+                .ReturnsAsync(eventToDelete);
+
+            _eventRepositoryMock
+                .Setup(repo => repo.DeleteAsync(eventToDelete.Id))
+                .ReturnsAsync(true);
 
             // Act
             var exception = await Record.ExceptionAsync(async () =>
@@ -234,10 +246,9 @@ namespace CourseProject.Tests
 
             // Assert
             Assert.Null(exception);
-            _context.ChangeTracker.Clear();
 
-            var eventInDb = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventToDelete.Id);
-            Assert.Null(eventInDb);
+            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(eventToDelete.Id), Times.Once);
+            _eventRepositoryMock.Verify(repo => repo.DeleteAsync(eventToDelete.Id), Times.Once);
         }
 
         [Fact]
@@ -246,10 +257,15 @@ namespace CourseProject.Tests
             // Arrange
             Guid? eventId = null;
 
-            // Act Assert
-            var exception = Assert.ThrowsAsync<InvalidEventDataException>(async () => await _eventService.DeleteEventAsync(eventId));
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidEventDataException>(
+                async () => await _eventService.DeleteEventAsync(eventId)
+            );
+
+            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
+            _eventRepositoryMock.Verify(repo => repo.DeleteAsync(It.IsAny<Guid>()), Times.Never);
         }
 
-        
+
     }
 }
