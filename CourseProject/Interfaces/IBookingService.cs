@@ -1,6 +1,6 @@
-﻿using CourseProject.Entities;
+﻿using CourseProject.Presentation.Entities;
 
-namespace CourseProject.Interfaces
+namespace CourseProject.Presentation.Interfaces
 {
     public interface IBookingService
     {

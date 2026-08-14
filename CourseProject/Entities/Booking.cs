@@ -1,9 +1,9 @@
-﻿using CourseProject.Models;
+﻿using CourseProject.Presentation.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 
-namespace CourseProject.Entities
+namespace CourseProject.Presentation.Entities
 {
     public class Booking
     {

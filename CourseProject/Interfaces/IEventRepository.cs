@@ -1,8 +1,8 @@
-﻿using CourseProject.Entities;
-using CourseProject.Models;
+﻿using CourseProject.Presentation.Entities;
+using CourseProject.Presentation.Models;
 using System.Xml.Serialization;
 
-namespace CourseProject.Interfaces
+namespace CourseProject.Presentation.Interfaces
 {
     public interface IEventRepository
     {

@@ -1,8 +1,8 @@
-﻿using CourseProject.Interfaces;
-using CourseProject.Services;
+﻿using CourseProject.Presentation.Interfaces;
+using CourseProject.Presentation.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CourseProject.Controllers
+namespace CourseProject.Presentation.Controllers
 {
     [Route("bookings")]
     [ApiController]

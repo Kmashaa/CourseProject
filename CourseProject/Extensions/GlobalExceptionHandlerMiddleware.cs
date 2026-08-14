@@ -1,8 +1,8 @@
-﻿using CourseProject.Exceptions;
+﻿using CourseProject.Presentation.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
-namespace CourseProject.Extensions
+namespace CourseProject.Presentation.Extensions
 {
     public class GlobalExceptionHandlerMiddleware
     {

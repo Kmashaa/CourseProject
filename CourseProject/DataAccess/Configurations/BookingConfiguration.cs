@@ -1,8 +1,8 @@
-﻿using CourseProject.Entities;
+﻿using CourseProject.Presentation.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace CourseProject.DataAccess.Configurations
+namespace CourseProject.Presentation.DataAccess.Configurations
 {
     internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
     {

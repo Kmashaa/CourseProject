@@ -1,11 +1,11 @@
-﻿using CourseProject.Entities;
-using CourseProject.Exceptions;
-using CourseProject.Interfaces;
-using CourseProject.Models;
-using CourseProject.Services;
+﻿using CourseProject.Presentation.Entities;
+using CourseProject.Presentation.Exceptions;
+using CourseProject.Presentation.Interfaces;
+using CourseProject.Presentation.Models;
+using CourseProject.Presentation.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CourseProject.Controllers
+namespace CourseProject.Presentation.Controllers
 {
     [Route("events")]
     [ApiController]

@@ -1,7 +1,7 @@
-﻿using CourseProject.Entities;
+﻿using CourseProject.Presentation.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace CourseProject.DataAccess
+namespace CourseProject.Presentation.DataAccess
 {
     public sealed class AppDbContext : DbContext
     {

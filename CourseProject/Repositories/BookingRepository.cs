@@ -1,9 +1,9 @@
-﻿using CourseProject.DataAccess;
-using CourseProject.Entities;
-using CourseProject.Interfaces;
+﻿using CourseProject.Presentation.DataAccess;
+using CourseProject.Presentation.Entities;
+using CourseProject.Presentation.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace CourseProject.Repositories
+namespace CourseProject.Presentation.Repositories
 {
     public class BookingRepository : IBookingRepository
     {

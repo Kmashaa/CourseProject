@@ -1,7 +1,7 @@
-﻿using CourseProject.Entities;
+﻿using CourseProject.Presentation.Entities;
 
 
-namespace CourseProject.Exceptions
+namespace CourseProject.Presentation.Exceptions
 {
     public class EventNotFoundException : Exception
     {

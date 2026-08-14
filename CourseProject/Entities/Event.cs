@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace CourseProject.Entities
+namespace CourseProject.Presentation.Entities
 {
     public class Event
     {

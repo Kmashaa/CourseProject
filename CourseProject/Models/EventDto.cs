@@ -1,7 +1,7 @@
 ﻿using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 
-namespace CourseProject.Models
+namespace CourseProject.Presentation.Models
 {
     public class EventDto : IValidatableObject
     {

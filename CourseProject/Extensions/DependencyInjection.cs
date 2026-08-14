@@ -1,10 +1,10 @@
-﻿using CourseProject.DataAccess;
-using CourseProject.Interfaces;
-using CourseProject.Repositories;
-using CourseProject.Services;
+﻿using CourseProject.Presentation.DataAccess;
+using CourseProject.Presentation.Interfaces;
+using CourseProject.Presentation.Repositories;
+using CourseProject.Presentation.Services;
 using Microsoft.EntityFrameworkCore;
 
-namespace CourseProject.Extensions
+namespace CourseProject.Presentation.Extensions
 {
     public static class DependencyInjection
     {

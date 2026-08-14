@@ -1,8 +1,8 @@
-﻿using CourseProject.Entities;
-using CourseProject.Models;
+﻿using CourseProject.Presentation.Entities;
+using CourseProject.Presentation.Models;
 
 
-namespace CourseProject.Interfaces
+namespace CourseProject.Presentation.Interfaces
 {
     public interface IEventDtoMapperService
     {

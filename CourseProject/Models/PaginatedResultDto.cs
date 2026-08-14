@@ -1,4 +1,4 @@
-﻿namespace CourseProject.Models
+﻿namespace CourseProject.Presentation.Models
 {
     public class PaginatedResultDto
     {

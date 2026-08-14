@@ -1,12 +1,12 @@
-﻿using CourseProject.DataAccess;
-using CourseProject.Entities;
-using CourseProject.Exceptions;
-using CourseProject.Interfaces;
-using CourseProject.Models;
-using CourseProject.Repositories;
+﻿using CourseProject.Presentation.DataAccess;
+using CourseProject.Presentation.Entities;
+using CourseProject.Presentation.Exceptions;
+using CourseProject.Presentation.Interfaces;
+using CourseProject.Presentation.Models;
+using CourseProject.Presentation.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-namespace CourseProject.Services
+namespace CourseProject.Presentation.Services
 {
     public class EventService : IEventService
     {

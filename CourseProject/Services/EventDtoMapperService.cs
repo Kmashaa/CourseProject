@@ -1,8 +1,8 @@
-﻿using CourseProject.Entities;
-using CourseProject.Interfaces;
-using CourseProject.Models;
+﻿using CourseProject.Presentation.Entities;
+using CourseProject.Presentation.Interfaces;
+using CourseProject.Presentation.Models;
 
-namespace CourseProject.Services
+namespace CourseProject.Presentation.Services
 {
     public class EventDtoMapperService : IEventDtoMapperService
     {

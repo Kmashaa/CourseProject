@@ -1,4 +1,4 @@
-﻿namespace CourseProject.Entities
+﻿namespace CourseProject.Presentation.Entities
 {
     public class PaginatedResult
     {

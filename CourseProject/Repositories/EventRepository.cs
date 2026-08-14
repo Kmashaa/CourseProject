@@ -1,10 +1,10 @@
-﻿using CourseProject.DataAccess;
-using CourseProject.Entities;
-using CourseProject.Interfaces;
-using CourseProject.Models;
+﻿using CourseProject.Presentation.DataAccess;
+using CourseProject.Presentation.Entities;
+using CourseProject.Presentation.Interfaces;
+using CourseProject.Presentation.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace CourseProject.Repositories
+namespace CourseProject.Presentation.Repositories
 {
     public class EventRepository : IEventRepository
     {

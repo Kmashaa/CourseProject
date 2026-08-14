@@ -1,5 +1,8 @@
 <Solution>
+  <Project Path="CourseProject.Application/CourseProject.Application.csproj" Id="694b9652-d460-4056-b4d2-d96a112f6f8c" />
+  <Project Path="CourseProject.Domain/CourseProject.Domain.csproj" Id="855a613f-0599-4360-8bce-a1691fec2e6d" />
+  <Project Path="CourseProject.Infrastructure/CourseProject.Infrastructure.csproj" Id="42e3a001-6b25-4db1-bec6-329de8b3a060" />
   <Project Path="CourseProject.IntegrationTests/CourseProject.IntegrationTests.csproj" Id="6ad58b45-56fe-456a-8613-2c4fb4f51cde" />
   <Project Path="CourseProject.Tests/CourseProject.Tests.csproj" Id="4714ae0e-725c-43de-8493-2183ff64f9bd" />
-  <Project Path="CourseProject/CourseProject.csproj" />
+  <Project Path="CourseProject/CourseProject.Presentation.csproj" />
 </Solution>

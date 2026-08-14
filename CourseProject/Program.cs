@@ -1,7 +1,7 @@
-using CourseProject.DataAccess;
-using CourseProject.Extensions;
-using CourseProject.Interfaces;
-using CourseProject.Services;
+using CourseProject.Presentation.DataAccess;
+using CourseProject.Presentation.Extensions;
+using CourseProject.Presentation.Interfaces;
+using CourseProject.Presentation.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 

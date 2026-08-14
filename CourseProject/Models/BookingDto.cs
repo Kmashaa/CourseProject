@@ -1,7 +1,7 @@
 ﻿using Swashbuckle.AspNetCore.Annotations;
 using System.Text.Json.Serialization;
 
-namespace CourseProject.Models
+namespace CourseProject.Presentation.Models
 {
     public class BookingDto
     {

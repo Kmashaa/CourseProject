@@ -1,9 +1,9 @@
-﻿using CourseProject.DataAccess;
-using CourseProject.Entities;
-using CourseProject.Interfaces;
+﻿using CourseProject.Presentation.DataAccess;
+using CourseProject.Presentation.Entities;
+using CourseProject.Presentation.Interfaces;
 using System.Runtime.InteropServices;
 
-namespace CourseProject.Services
+namespace CourseProject.Presentation.Services
 {
     public class BookingProcessingService : BackgroundService
     {
