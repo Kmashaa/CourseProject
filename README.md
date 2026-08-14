@@ -3,6 +3,8 @@
 ### Предварительные требования
 .NET 10.0 SDK
 
+Docker Desktop (для запуска интеграционных тестов)
+
 ### Инструкция
 1. Клонируйте репозиторий
     ```
@@ -14,14 +16,18 @@
     ```
 3. Перейдите в нужную ветку
     ```
-	git switch sprint-4
+	git switch sprint-6
     ```
 
 4. Запустите тесты
 	```
 	dotnet test
 	```
-5. Запустите проект
+5. Запустите интеграционные тесты (требуется Docker)
+   ```
+	dotnet test CourseProject.IntegrationTests
+   ```
+6. Запустите проект
 
 HTTPS:
     ```
@@ -33,12 +39,48 @@ HTTP:
 	dotnet run --project CourseProject --launch-profile http
     ```
 
-6. Откройте Swagger
+7. Откройте Swagger
 
 	HTTPS: https://localhost:7255/swagger/index.html
 
 	HTTP: http://localhost:5030/swagger/index.html
 
+## Управление схемой базы данных через миграции EF Core
+
+Схема базы данных управляется миграциями Entity Framework Core. Миграции позволяют версионировать схему базы данных и применять изменения автоматически.
+
+### Создание новой миграции
+
+Для создания новой миграции после изменения моделей выполните:
+	```
+	dotnet ef migrations add <MigrationName> --project CourseProject
+	```
+
+Например:
+	```
+	dotnet ef migrations add InitialCreate --project CourseProject
+	```
+
+### Применение миграций к базе данных
+
+Для применения всех непримененных миграций к базе данных выполните:
+	```
+	dotnet ef database update --project CourseProject
+	```
+
+### Откат миграции
+Для отката к предыдущей миграции выполните:
+	```
+	dotnet ef database update <PreviousMigrationName> --project CourseProject
+	```
+
+### Удаление последней миграции
+
+Если миграция еще не была применена к базе данных:
+	```
+	dotnet ef migrations remove --project CourseProject
+	```
+	
 ## Описание API
 ### Event:
 	GET /events — получить список событий с поддержкой фильтрации и пагинации.
@@ -158,7 +200,7 @@ HTTP:
 
   Interfaces: Интерфейсы
 
-  Data: Логика хранения данных
+  DataAccess: Логика хранения данных
 
   Services: Слой бизнес-логики и маппинга
 
@@ -168,13 +210,38 @@ HTTP:
 
   Extensions: Глобальные расширения
 
+  Migrations: Миграции Entity Framework Core для управления схемой базы данных
 
-## Архитектура EventService.Tests
+  Repositories: Инфраструктурный слой работы с базой данных
+
+
+## Архитектура CourseProject.Tests
 EventServiceTests.cs: тесты для сервиса EventService
 
 BookingServiceTests.cs: тесты для сервиса BookingService
 
 
+## Архитектура CourseProject.IntegrationTests
+EventRepositoryTests.cs: интеграционные тесты для репозитория EventRepository
+
+BookingRepositoryTests.cs: интеграционные тесты для репозитория BookingRepository
+
+### Интеграционные тесты
+Интеграционные тесты используют реальную базу данных PostgreSQL, запущенную в Docker-контейнере через библиотеку Testcontainers.
+
+**Требования для запуска:**
+- Docker Desktop должен быть установлен и запущен
+- Docker engine должен быть доступен
+
+1. При запуске интеграционных тестов автоматически создается Docker-контейнер с PostgreSQL 16
+
+2. Перед каждым тестом применяются миграции EF Core через `MigrateAsync()`
+
+3. После каждого теста база данных очищается
+
+4. После завершения всех тестов контейнер автоматически удаляется
+
+  
 ## Обработка ошибок
 
 API использует стандарт **Problem Details for HTTP APIs** ([RFC 7807](https://ietf.org)) для возврата информации об ошибках.
