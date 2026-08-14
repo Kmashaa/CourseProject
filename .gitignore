@@ -44,3 +44,6 @@
 /CourseProject.Application/obj/CourseProject.Application.csproj.nuget.g.targets
 /CourseProject.Application/obj/project.assets.json
 /CourseProject.Application/obj/project.nuget.cache
+/CourseProject.Presentation/.vs
+/CourseProject.Presentation/bin/Debug/net10.0
+/CourseProject.Presentation/obj
