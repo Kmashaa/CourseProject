@@ -2,6 +2,7 @@ using CourseProject.DataAccess;
 using CourseProject.Extensions;
 using CourseProject.Interfaces;
 using CourseProject.Services;
+using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,7 +16,8 @@ if (builder.Environment.IsDevelopment())
     });
 }
 
-builder.Services.AddSwaggerGen(options => {
+builder.Services.AddSwaggerGen(options =>
+{
     options.EnableAnnotations();
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -37,7 +39,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline.

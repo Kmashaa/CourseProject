@@ -54,7 +54,7 @@ namespace CourseProject.Controllers
         /// <response code="404">Event not found</response>
 
         [HttpGet("{id}")]
-        public async Task <IActionResult> GetById(Guid id)
+        public async Task<IActionResult> GetById(Guid id)
         {
             var @event = await _eventService.GetEventByIdAsync(id);
 
@@ -62,7 +62,7 @@ namespace CourseProject.Controllers
             {
                 return NotFound(); // 404 Not found
             }
-            var eventDto=_eventDtoMapperService.EntityToDto(@event);
+            var eventDto = _eventDtoMapperService.EntityToDto(@event);
             return Ok(eventDto); // 200 Ok
         }
 
@@ -83,7 +83,7 @@ namespace CourseProject.Controllers
         /// <summary>
         /// Update an existing event
         /// </summary>
-         /// <param name="id">Event ID</param>
+        /// <param name="id">Event ID</param>
         /// <returns>No data</returns>
         /// <response code="204">Event updated successfully. Returns no data</response>
         /// <response code="404">Event not found</response>
@@ -110,7 +110,11 @@ namespace CourseProject.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _eventService.DeleteEventAsync(id);
+            var result = await _eventService.DeleteEventAsync(id);
+            if (result == false)
+            {
+                return NotFound(); // 404 Not found
+            }
             return NoContent(); // 204 No Content
         }
 

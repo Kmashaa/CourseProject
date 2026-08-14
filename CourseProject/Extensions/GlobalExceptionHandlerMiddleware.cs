@@ -45,7 +45,7 @@ namespace CourseProject.Extensions
             var statusCode = MapStatusCode(ex);
 
             httpContext.Response.StatusCode = statusCode;
-            httpContext.Response.ContentType = "application/json";
+            httpContext.Response.ContentType = "application/problem+json";
 
             var error = new ProblemDetails
             {

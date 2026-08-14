@@ -68,7 +68,7 @@ namespace CourseProject.Entities
             StartAt = startAt!.Value;
             EndAt = endAt!.Value;
             Description = description;
-            TotalSeats= totalSeats;
+            TotalSeats = totalSeats;
             AvailableSeats = TotalSeats - (oldTotal - AvailableSeats);
         }
 

@@ -8,13 +8,13 @@ namespace CourseProject.Interfaces
 
         Task<Booking?> GetByIdAsync(Guid id);
 
-        Task<Booking> CreateAsync(Guid eventId);
+        Task<Booking> CreateAsync(Booking booking);
 
         Task<Booking?> UpdateAsync(Booking booking);
 
         Task<bool> DeleteAsync(Guid id);
 
-        Task<List<Booking>> GetPendingsAsync();
+        Task<List<Guid>> GetPendingsAsync();
 
     }
 }
