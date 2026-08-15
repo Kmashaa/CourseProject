@@ -19,6 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CourseProject.Application\CourseProject.Application.csproj" />
+    <ProjectReference Include="..\CourseProject.Domain\CourseProject.Domain.csproj" />
+    <ProjectReference Include="..\CourseProject.Infrastructure\CourseProject.Infrastructure.csproj" />
     <ProjectReference Include="..\CourseProject\CourseProject.Presentation.csproj" />
   </ItemGroup>
 
