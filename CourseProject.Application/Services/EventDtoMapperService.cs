@@ -14,7 +14,7 @@ namespace CourseProject.Application.Services
 
         public EventDto EntityToDto(Event @event)
         {
-            EventDto eventDto = new(@event.Id, @event.Title, @event.StartAt, @event.EndAt, @event.TotalSeats, @event.Description) { };
+            EventDto eventDto = new(@event.Id, @event.Title, @event.StartAt, @event.EndAt, @event.TotalSeats, @event.AvailableSeats, @event.Description) { };
             return eventDto;
         }
 

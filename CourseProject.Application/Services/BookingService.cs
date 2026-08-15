@@ -13,15 +13,17 @@ namespace CourseProject.Application.Services
         private readonly IEventService _eventService;
 
         private readonly IBookingRepository _bookingRepository;
+        private readonly IEventRepository _eventRepository;
 
         private readonly IEventDtoMapperService _eventDtoMapperService;
         private readonly IBookingDtoMapperService _bookingDtoMapperService;
 
 
-        public BookingService(IEventService eventService, IBookingRepository bookingRepository, IEventDtoMapperService eventDtoMapperService, IBookingDtoMapperService bookingDtoMapperService)
+        public BookingService(IEventService eventService, IBookingRepository bookingRepository, IEventRepository eventRepository, IEventDtoMapperService eventDtoMapperService, IBookingDtoMapperService bookingDtoMapperService)
         {
             _eventService = eventService;
             _bookingRepository = bookingRepository;
+            _eventRepository = eventRepository;
             _eventDtoMapperService = eventDtoMapperService;
             _bookingDtoMapperService = bookingDtoMapperService;
         }
@@ -38,12 +40,13 @@ namespace CourseProject.Application.Services
 
             try
             {
-                var @event = _eventDtoMapperService.DtoToEntity(await _eventService.GetEventByIdAsync((Guid)eventId));
+                var @event = await _eventRepository.GetByIdAsync((Guid)eventId);
 
                 if (@event.TryReserveSeats())
                 {
                     var booking = Booking.CreatePending(@event.Id);
                     await _bookingRepository.CreateAsync(booking);
+                    await _eventRepository.UpdateAsync(@event);
                     return _bookingDtoMapperService.EntityToDto(booking);
                 }
                 else
@@ -60,6 +63,11 @@ namespace CourseProject.Application.Services
         public async Task<BookingDto?> GetBookingByIdAsync(Guid bookingId)
         {
             var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            if (booking == null)
+            {
+                throw new BookingNotFoundException(booking, "Booking not found");
+
+            }
             return _bookingDtoMapperService.EntityToDto(booking);
         }
 

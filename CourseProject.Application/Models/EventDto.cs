@@ -34,6 +34,24 @@ namespace CourseProject.Application.Models
         DateTime startAt,
         DateTime endAt,
         int totalSeats,
+        int availableSeats,
+        string? description = null)
+        {
+            Id = id;
+            Title = title;
+            StartAt = startAt;
+            EndAt = endAt;
+            TotalSeats = totalSeats;
+            AvailableSeats = availableSeats;
+            Description = description;
+        }
+
+        public EventDto(
+        Guid id,
+        string title,
+        DateTime startAt,
+        DateTime endAt,
+        int totalSeats,
         string? description = null)
         {
             Id = id;

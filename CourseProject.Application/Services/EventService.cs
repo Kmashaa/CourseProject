@@ -39,7 +39,7 @@ namespace CourseProject.Application.Services
 
             if (@event == null)
             {
-                throw new EventNotFoundException();
+                throw new EventNotFoundException(@event, "Event not found");
 
             }
 
@@ -63,7 +63,7 @@ namespace CourseProject.Application.Services
 
             if (currentDbEvent == null)
             {
-                throw new EventNotFoundException();
+                throw new EventNotFoundException(currentDbEvent, "Event not found");
             }
 
             int bookedSeats = currentDbEvent.TotalSeats - currentDbEvent.AvailableSeats;

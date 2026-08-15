@@ -62,6 +62,7 @@ namespace CourseProject.Presentation.Extensions
             {
                 ValidationException _ => StatusCodes.Status400BadRequest,
                 EventNotFoundException _ => StatusCodes.Status404NotFound,
+                BookingNotFoundException _ => StatusCodes.Status404NotFound,
                 InvalidEventDataException _ => StatusCodes.Status400BadRequest,
                 NoAvailableSeatsException _ => StatusCodes.Status409Conflict,
                 _ => StatusCodes.Status500InternalServerError
