@@ -26,7 +26,6 @@ namespace CourseProject.Application.Models
 
     }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum BookingStatus
     {
         Pending = 1,
