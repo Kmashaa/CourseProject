@@ -7,7 +7,7 @@ namespace CourseProject.Domain.Entities
     {
         public required Guid Id { get; init; }
 
-        public required Guid EventId { get; set; }
+        public required Guid EventId { get; init; }
 
         public required BookingStatus Status { get; set; }
 

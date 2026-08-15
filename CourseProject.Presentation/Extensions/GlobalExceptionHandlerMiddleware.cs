@@ -1,6 +1,7 @@
-﻿using CourseProject.Presentation.Exceptions;
+﻿using CourseProject.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using CourseProject.Application.Exceptions;
 
 namespace CourseProject.Presentation.Extensions
 {

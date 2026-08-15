@@ -1,4 +1,5 @@
-﻿using CourseProject.Presentation.Interfaces;
+﻿using CourseProject.Application.Interfaces;
+using CourseProject.Presentation.Interfaces;
 using CourseProject.Presentation.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +10,12 @@ namespace CourseProject.Presentation.Controllers
     public class BookingsController : Controller
     {
         private readonly IBookingService _bookingService;
-        private readonly IBookingDtoMapperService _bookingDtoMapperService;
+        private readonly IBookingModelDtoMapperService _bookingModelDtoMapperService;
 
-        public BookingsController(IBookingService bookingService, IBookingDtoMapperService bookingDtoMapperService)
+        public BookingsController(IBookingService bookingService, IBookingModelDtoMapperService bookingModelDtoMapperService)
         {
             _bookingService = bookingService;
-            _bookingDtoMapperService = bookingDtoMapperService;
+            _bookingModelDtoMapperService = bookingModelDtoMapperService;
         }
 
         /// <summary>
@@ -28,14 +29,14 @@ namespace CourseProject.Presentation.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var booking = await _bookingService.GetBookingByIdAsync(id);
+            var bookingDto = await _bookingService.GetBookingByIdAsync(id);
 
-            if (booking == null)
+            if (bookingDto == null)
             {
                 return NotFound(); // 404 Not found
             }
-            var bookingDto = _bookingDtoMapperService.EntityToDto(booking);
-            return Ok(bookingDto); // 200 Ok
+            var bookingModel = _bookingModelDtoMapperService.DtoToModel(bookingDto);
+            return Ok(bookingModel); // 200 Ok
         }
     }
 }

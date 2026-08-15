@@ -1,10 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using CourseProject.Domain.Exceptions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CourseProject.Domain.Entities
 {
     public class Event
     {
-        public required Guid Id { get; set; }
+        public required Guid Id { get; init; }
 
         public required string Title { get; set; }
 
@@ -81,7 +82,8 @@ namespace CourseProject.Domain.Entities
             }
             else
             {
-                return false;
+                throw new NoAvailableSeatsException();
+                //return false;
             }
         }
 

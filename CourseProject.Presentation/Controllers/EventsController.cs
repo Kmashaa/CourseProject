@@ -1,8 +1,7 @@
-﻿using CourseProject.Presentation.Entities;
-using CourseProject.Presentation.Exceptions;
+﻿using CourseProject.Application.Interfaces;
+//using CourseProject.Presentation.Exceptions;
 using CourseProject.Presentation.Interfaces;
 using CourseProject.Presentation.Models;
-using CourseProject.Presentation.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CourseProject.Presentation.Controllers
@@ -13,16 +12,18 @@ namespace CourseProject.Presentation.Controllers
     {
         private readonly IEventService _eventService;
         private readonly IBookingService _bookingService;
-        private readonly IEventDtoMapperService _eventDtoMapperService;
-        private readonly IBookingDtoMapperService _bookingDtoMapperService;
+        private readonly IEventModelDtoMapperService _eventModelDtoMapperService;
+        private readonly IBookingModelDtoMapperService _bookingModelDtoMapperService;
+        private readonly IEventFilterModelDtoMapperService _eventFilterModelDtoMapperService;
 
-
-        public EventsController(IEventService eventService, IBookingService bookingService, IEventDtoMapperService eventDtoMapperService, IBookingDtoMapperService bookingDtoMapperService)
+        public EventsController(IEventService eventService, IBookingService bookingService, IEventModelDtoMapperService eventModelDtoMapperService, IBookingModelDtoMapperService bookingModelDtoMapperService, IEventFilterModelDtoMapperService eventFilterModelDtoMapperService)
         {
             _eventService = eventService;
             _bookingService = bookingService;
-            _eventDtoMapperService = eventDtoMapperService;
-            _bookingDtoMapperService = bookingDtoMapperService;
+            _eventModelDtoMapperService = eventModelDtoMapperService;
+            _bookingModelDtoMapperService = bookingModelDtoMapperService;
+            _eventFilterModelDtoMapperService = eventFilterModelDtoMapperService;
+
 
         }
 
@@ -32,17 +33,19 @@ namespace CourseProject.Presentation.Controllers
         /// <returns>List of all events</returns>
         /// <response code="200">Event list received successfully</response>
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] EventFilter filter)
+        public async Task<IActionResult> GetAll([FromQuery] EventFilterModel eventFilterModel)
         {
-            var events = await _eventService.GetEventsAsync(filter);
-            PaginatedResultDto eventsDto = new()
+            var eventFilterDto = _eventFilterModelDtoMapperService.ModelToDto(eventFilterModel);
+
+            var eventsDto = await _eventService.GetEventsAsync(eventFilterDto);
+            PaginatedResultModel eventsModel = new()
             {
-                TotalItems = events.TotalItems,
-                CurrentPage = events.CurrentPage,
-                NumOfItemsOnCurrentPage = events.NumOfItemsOnCurrentPage,
-                EventsDto = events.Events.Select(o => _eventDtoMapperService.EntityToDto(o)).ToList()
+                TotalItems = eventsDto.TotalItems,
+                CurrentPage = eventsDto.CurrentPage,
+                NumOfItemsOnCurrentPage = eventsDto.NumOfItemsOnCurrentPage,
+                EventsModel = eventsDto.EventsDto.Select(o => _eventModelDtoMapperService.DtoToModel(o)).ToList()
             };
-            return Ok(eventsDto); //200 Ok
+            return Ok(eventsModel); //200 Ok
         }
 
         /// <summary>
@@ -56,14 +59,14 @@ namespace CourseProject.Presentation.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var @event = await _eventService.GetEventByIdAsync(id);
+            var eventDto = await _eventService.GetEventByIdAsync(id);
 
-            if (@event == null)
+            if (eventDto == null)
             {
                 return NotFound(); // 404 Not found
             }
-            var eventDto = _eventDtoMapperService.EntityToDto(@event);
-            return Ok(eventDto); // 200 Ok
+            var eventModel = _eventModelDtoMapperService.DtoToModel(eventDto);
+            return Ok(eventModel); // 200 Ok
         }
 
         /// <summary>
@@ -72,12 +75,12 @@ namespace CourseProject.Presentation.Controllers
         /// <returns>Created event</returns>
         /// <response code="201">Event created successfully</response>
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] EventDto eventDto)
+        public async Task<IActionResult> Create([FromBody] EventModel eventModel)
         {
-            var @event = _eventDtoMapperService.DtoToEntity(eventDto);
-            await _eventService.CreateEventAsync(@event);
+            var eventDto = _eventModelDtoMapperService.ModelToDto(eventModel);
+            await _eventService.CreateEventAsync(eventDto);
 
-            return CreatedAtAction(nameof(GetById), new { id = @event.Id }, _eventDtoMapperService.EntityToDto(@event)); // 201 Created
+            return CreatedAtAction(nameof(GetById), new { id = eventDto.Id }, _eventModelDtoMapperService.DtoToModel(eventDto)); // 201 Created
         }
 
         /// <summary>
@@ -90,12 +93,12 @@ namespace CourseProject.Presentation.Controllers
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] EventDto eventDto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] EventModel eventModel)
         {
-            eventDto.Id = id;
-            var @event = _eventDtoMapperService.DtoToEntity(eventDto);
+            eventModel.Id = id;
+            var eventDto = _eventModelDtoMapperService.ModelToDto(eventModel);
 
-            await _eventService.UpdateEventAsync(@event);
+            await _eventService.UpdateEventAsync(eventDto);
 
             return NoContent(); // 204 No Content
         }
@@ -129,15 +132,8 @@ namespace CourseProject.Presentation.Controllers
         [HttpPost("{id}/book")]
         public async Task<IActionResult> BookEvent(Guid id)
         {
-            try
-            {
-                var bookingDto = _bookingDtoMapperService.EntityToDto(await _bookingService.CreateBookingAsync(id));
-                return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingDto.Id }, bookingDto);
-            }
-            catch (EventNotFoundException ex)
-            {
-                return NotFound();
-            }
+            var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id));
+            return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel);
         }
     }
 }

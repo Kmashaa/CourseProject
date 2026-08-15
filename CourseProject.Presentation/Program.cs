@@ -1,9 +1,10 @@
-using CourseProject.Presentation.DataAccess;
 using CourseProject.Presentation.Extensions;
-using CourseProject.Presentation.Interfaces;
-using CourseProject.Presentation.Services;
-using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using CourseProject.Application.Extensions;
+using CourseProject.Infrastructure.Extensions;
+using CourseProject.Infrastructure.DataAccess;
+using Microsoft.EntityFrameworkCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,8 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddPresentation();
+
 
 var app = builder.Build();
 
