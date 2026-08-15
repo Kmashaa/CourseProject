@@ -1,10 +1,7 @@
-﻿using CourseProject.DataAccess;
-using CourseProject.Entities;
-using CourseProject.Exceptions;
-using CourseProject.Models;
-using CourseProject.Repositories;
+﻿using CourseProject.Infrastructure.DataAccess;
+using CourseProject.Domain.Entities;
+using CourseProject.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Testcontainers.PostgreSql;
 
 namespace CourseProject.IntegrationTests

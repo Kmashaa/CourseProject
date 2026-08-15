@@ -1,6 +1,6 @@
-﻿using CourseProject.DataAccess;
-using CourseProject.Entities;
-using CourseProject.Repositories;
+﻿using CourseProject.Infrastructure.DataAccess;
+using CourseProject.Domain.Entities;
+using CourseProject.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
