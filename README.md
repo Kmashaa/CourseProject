@@ -16,7 +16,7 @@ Docker Desktop (для запуска интеграционных тестов)
     ```
 3. Перейдите в нужную ветку
     ```
-	git switch sprint-6
+	git switch sprint-7
     ```
 
 4. Запустите тесты
@@ -31,12 +31,12 @@ Docker Desktop (для запуска интеграционных тестов)
 
 HTTPS:
     ```
-	dotnet run --project CourseProject --launch-profile https
+	dotnet run --project CourseProject.Presentation --launch-profile https
     ```
 
 HTTP:
     ```
-	dotnet run --project CourseProject --launch-profile http
+	dotnet run --project CourseProject.Presentation --launch-profile http
     ```
 
 7. Откройте Swagger
@@ -53,8 +53,7 @@ HTTP:
 
 Для создания новой миграции после изменения моделей выполните:
 	```
-	dotnet ef migrations add <MigrationName> --project CourseProject
-	```
+	dotnet ef migrations add <MigrationName> --project CourseProject.Infrastructure/CourseProject.Infrastructure.csproj --startup-project CourseProject.Presentation/CourseProject.Presentation.csproj	```
 
 Например:
 	```
@@ -65,20 +64,20 @@ HTTP:
 
 Для применения всех непримененных миграций к базе данных выполните:
 	```
-	dotnet ef database update --project CourseProject
+	dotnet ef database update --project CourseProject.Infrastructure/CourseProject.Infrastructure.csproj --startup-project CourseProject.Presentation/CourseProject.Presentation.csproj
 	```
 
 ### Откат миграции
 Для отката к предыдущей миграции выполните:
 	```
-	dotnet ef database update <PreviousMigrationName> --project CourseProject
+	dotnet ef database update <PreviousMigrationName> --project CourseProject.Infrastructure/CourseProject.Infrastructure.csproj --startup-project CourseProject.Presentation/CourseProject.Presentation.csproj
 	```
 
 ### Удаление последней миграции
 
 Если миграция еще не была применена к базе данных:
 	```
-	dotnet ef migrations remove --project CourseProject
+	dotnet ef migrations remove --project CourseProject.Infrastructure/CourseProject.Infrastructure.csproj
 	```
 	
 ## Описание API
@@ -152,7 +151,7 @@ HTTP:
             }
             else
             {
-                return false;
+                throw new NoAvailableSeatsException();
             }
         }
 
@@ -194,26 +193,47 @@ HTTP:
 	Пользователь создает еще одну бронь через POST /events/{id}/book и получает статус 409 Conflict из-за отсутствия свободных мест.
 	
 ## Архитектура CourseProject
-  Entities: Доменные сущности
+### CourseProject.Domain
+Независимый слой
 
-  Models: Модели запросов
+	Entities: Доменные сущности и бизнес-модели
+	
+	Exceptions: Классы кастомных доменных исключений
 
-  Interfaces: Интерфейсы
+### CourseProject.Application
+Зависит от Domain
 
-  DataAccess: Логика хранения данных
+	Exceptions: Классы кастомных исключений
+	
+	Extensions: Настройка DI
+	
+	Services: Реализация сценариев использования
+	
+	Models: Прикладные модели данных (DTO)
 
-  Services: Слой бизнес-логики и маппинга
+	Interfaces: Интерфейсы
 
-  Controllers: Обработка HTTP-запросов
+### CourseProject.Infrastructure
+Зависит от Domain и Application
 
-  Exceptions: Классы кастомных исключений
+	DataAccess: Логика хранения данных и конфигурации таблиц (Configurations)
+	
+	Repositories: Инфраструктурный слой (репозитории) работы с базой данных
+	
+	Migrations: Миграции Entity Framework Core для управления схемой базы данных
+	
+	Extensions: Настройка DI
 
-  Extensions: Глобальные расширения
+### CourseProject.Presentation
+Точка входа в приложение. Зависит от Application и инициализирует Infrastructure
 
-  Migrations: Миграции Entity Framework Core для управления схемой базы данных
-
-  Repositories: Инфраструктурный слой работы с базой данных
-
+	Controllers: Обработка HTTP-запросов
+	
+	Interfaces: Интерфейсы
+	
+	Services: Маппинг
+	
+	Extensions: Настройка DI
 
 ## Архитектура CourseProject.Tests
 EventServiceTests.cs: тесты для сервиса EventService
