@@ -16,7 +16,7 @@ namespace CourseProject.Domain.Exceptions
 
         }
 
-        public PastEventException(Guid eventId) : base($"Event with ID '{eventId}' already has ended")
+        public PastEventException(Guid eventId) : base($"Event with ID '{eventId}' has already started")
         {
             EventId = eventId;
         }

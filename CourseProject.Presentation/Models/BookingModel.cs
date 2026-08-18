@@ -12,6 +12,9 @@ namespace CourseProject.Presentation.Models
         [SwaggerSchema("Id of event", ReadOnly = true)]
         public required Guid EventId { get; set; }
 
+        [SwaggerSchema("Id of user", ReadOnly = true)]
+        public required Guid? UserId { get; set; }
+
         [SwaggerSchema("Status of booking", ReadOnly = true)]
         public required BookingStatus Status { get; set; }
 

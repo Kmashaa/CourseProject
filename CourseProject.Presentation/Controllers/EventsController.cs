@@ -132,7 +132,7 @@ namespace CourseProject.Presentation.Controllers
         [HttpPost("{id}/book")]
         public async Task<IActionResult> BookEvent(Guid id)
         {
-            var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id));
+            var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id, Guid.NewGuid())); //TODO: user's guid
             return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel);
         }
     }

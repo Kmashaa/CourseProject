@@ -9,7 +9,7 @@ namespace CourseProject.Domain.Entities
 
         public required Guid EventId { get; init; }
 
-        public required Guid UserId { get; init; }
+        public required Guid? UserId { get; init; }
 
         public required BookingStatus Status { get; set; }
 
@@ -26,7 +26,7 @@ namespace CourseProject.Domain.Entities
         private Booking() { }
 
         [SetsRequiredMembers]
-        public Booking(Guid id, Guid eventId, Guid userId, BookingStatus status, DateTime createdAt)
+        public Booking(Guid id, Guid eventId, Guid? userId, BookingStatus status, DateTime createdAt)
         {
             Id = id;
             EventId = eventId;

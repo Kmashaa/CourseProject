@@ -16,5 +16,7 @@ namespace CourseProject.Application.Interfaces
 
         Task<List<Guid>> GetPendingsAsync();
 
+        Task<int> GetActiveBookingsCountByUserIdAsync(Guid userId);
+
     }
 }

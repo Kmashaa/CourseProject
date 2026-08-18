@@ -3,6 +3,7 @@ using CourseProject.Application.Interfaces;
 using CourseProject.Application.Models;
 using CourseProject.Domain.Entities;
 using CourseProject.Domain.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace CourseProject.Application.Services
 {
@@ -29,7 +30,7 @@ namespace CourseProject.Application.Services
         }
 
 
-        public async Task<BookingDto?> CreateBookingAsync(Guid? eventId)
+        public async Task<BookingDto?> CreateBookingAsync(Guid? eventId, Guid userId)
         {
             if (eventId == null)
             {
@@ -40,11 +41,26 @@ namespace CourseProject.Application.Services
 
             try
             {
-                var @event = await _eventRepository.GetByIdAsync((Guid)eventId);
+                const int maxUserBookings = 10; //TODO: config
+                var userBookingsCount = await _bookingRepository.GetActiveBookingsCountByUserIdAsync(userId);
 
+                if (userBookingsCount >= maxUserBookings)
+                {
+                    throw new ActiveBookingsLimit(userId);
+                }
+
+                var @event = await _eventRepository.GetByIdAsync((Guid)eventId);
+                if (@event == null)
+                {
+                    throw new EventNotFoundException((Guid)eventId);
+                }
+                if (@event.StartAt <= DateTime.Now)
+                {
+                    throw new PastEventException(@event.Id);
+                }
                 if (@event.TryReserveSeats())
                 {
-                    var booking = Booking.CreatePending(@event.Id);
+                    var booking = Booking.CreatePending(@event.Id, userId);
                     await _bookingRepository.CreateAsync(booking);
                     await _eventRepository.UpdateAsync(@event);
                     return _bookingDtoMapperService.EntityToDto(booking);
@@ -71,5 +87,54 @@ namespace CourseProject.Application.Services
             return _bookingDtoMapperService.EntityToDto(booking);
         }
 
+        public async Task<bool> CancelBookingAsync(Guid bookingId, User user)
+        {
+
+
+            await _semaphore.WaitAsync(); //semaphore, а не lock, т.к. внутри асинхронный код
+
+            try
+            {
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null)
+                {
+                    throw new BookingNotFoundException(booking, "Booking not found");
+
+                }
+                if (!(user.Role == Domain.Entities.Roles.Admin || booking.UserId == user.Id))
+                {
+                    throw new NoPermissionException();
+                }
+
+                var @event = await _eventRepository.GetByIdAsync((Guid)booking.EventId);
+
+                if (@event == null)
+                {
+                    throw new EventNotFoundException((Guid)booking.EventId);
+                }
+                if (@event.StartAt <= DateTime.Now)
+                {
+                    throw new PastEventException(@event.Id);
+                }
+
+
+
+                if (@event.ReleaseSeats())
+                {
+                    booking.Cancel();
+                    await _bookingRepository.UpdateAsync(booking);
+                    await _eventRepository.UpdateAsync(@event);
+                    return true;
+                }
+                else
+                {
+                    throw new InvalidEventDataException();
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
     }
 }
