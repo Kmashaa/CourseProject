@@ -83,7 +83,7 @@ namespace CourseProject.Presentation.Controllers
                 {
                     return NotFound(); // 404 Not found
                 }
-                return Ok(_bookingModelDtoMapperService.DtoToModel(result)); // 204 No Content 
+                return NoContent(); // 204 No Content 
             }
             else
             {

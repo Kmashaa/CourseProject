@@ -4,7 +4,6 @@ using CourseProject.Application.Models;
 using CourseProject.Domain.Entities;
 using CourseProject.Domain.Exceptions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace CourseProject.Application.Services
 {
@@ -39,7 +38,7 @@ namespace CourseProject.Application.Services
 
             try
             {
-                int maxUserBookings = Convert.ToInt32(_configuration["BookingsLimit"]); 
+                int maxUserBookings = Convert.ToInt32(_configuration["BookingsLimit"]);
                 var userBookingsCount = await _bookingRepository.GetActiveBookingsCountByUserIdAsync(userId);
 
                 if (userBookingsCount >= maxUserBookings)
@@ -81,7 +80,7 @@ namespace CourseProject.Application.Services
 
             Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
 
-            if (!(userRole == Domain.Entities.Roles.Admin || booking.UserId == userId))
+            if (userRole != Domain.Entities.Roles.Admin && (booking == null || booking.UserId != userId))
             {
                 throw new NoPermissionException(userId);
             }
@@ -123,7 +122,8 @@ namespace CourseProject.Application.Services
                 {
                     throw new EventNotFoundException((Guid)booking.EventId);
                 }
-                if (@event.StartAt <= DateTime.Now)
+
+                if (@event.StartAt <= DateTime.Now && userRole != Domain.Entities.Roles.Admin)
                 {
                     throw new PastEventException(@event.Id);
                 }

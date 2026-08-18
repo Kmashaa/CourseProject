@@ -32,7 +32,7 @@ namespace CourseProject.Presentation.Controllers
         {
             var userId = await _userService.RegisterUserAsync(registerModel.Login, registerModel.Password, registerModel.Role);
 
-            return Created(nameof(Login), new { id = userId, login = registerModel.Login });
+            return NoContent();
         }
 
         /// <summary>

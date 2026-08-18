@@ -1312,6 +1312,260 @@ namespace CourseProject.Tests
             Assert.NotNull(exception);
         }
 
+        [Fact]
+        public async Task CancelBookingAsync_WhenUserTriesToCancelOtherUsersBooking_ShouldThrowNoPermissionException()
+        {
+            // Arrange
+            var bookingId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var ownerId = Guid.NewGuid(); 
+            var otherUserId = Guid.NewGuid();  
+            var role = "User"; 
+
+            var existingEvent = new Event(
+                eventId,
+                "Test Event",
+                DateTime.UtcNow.AddDays(1), 
+                DateTime.UtcNow.AddDays(1).AddHours(3),
+                50
+            );
+
+            var booking = new Booking(
+                id: bookingId,
+                eventId: eventId,
+                userId: ownerId,
+                status: Domain.Entities.BookingStatus.Pending,
+                createdAt: DateTime.UtcNow
+            );
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(bookingId))
+                .ReturnsAsync(booking);
+
+            _eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(eventId))
+                .ReturnsAsync(existingEvent);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<NoPermissionException>(async () =>
+                await _bookingService.CancelBookingAsync(bookingId, otherUserId, role)
+            );
+
+            Assert.Equal(Domain.Entities.BookingStatus.Pending, booking.Status);
+            Assert.Null(booking.ProcessedAt);
+
+            _bookingRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Booking>()), Times.Never);
+            _eventRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Event>()), Times.Never);
+
+            _bookingRepositoryMock.Verify(repo => repo.GetByIdAsync(bookingId), Times.Once);
+            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CancelBookingAsync_WhenAdminCancelsOtherUsersBooking_ShouldBeSuccessful()
+        {
+            // Arrange
+            var bookingId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var ownerId = Guid.NewGuid(); 
+            var adminId = Guid.NewGuid(); 
+            var role = "Admin"; 
+
+            var existingEvent = new Event(
+                eventId,
+                "Test Event",
+                DateTime.UtcNow.AddDays(1),
+                DateTime.UtcNow.AddDays(1).AddHours(3),
+                50
+            );
+            existingEvent.AvailableSeats = 49; 
+
+            var booking = new Booking(
+                id: bookingId,
+                eventId: eventId,
+                userId: ownerId,
+                status: Domain.Entities.BookingStatus.Pending,
+                createdAt: DateTime.UtcNow
+            );
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(bookingId))
+                .ReturnsAsync(booking);
+
+            _eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(eventId))
+                .ReturnsAsync(existingEvent);
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.UpdateAsync(It.IsAny<Booking>()))
+                .ReturnsAsync((Booking b) => b);
+
+            _eventRepositoryMock
+                .Setup(repo => repo.UpdateAsync(It.IsAny<Event>()))
+                .ReturnsAsync((Event e) => e);
+
+            _bookingDtoMapperServiceMock
+                .Setup(mapper => mapper.EntityToDto(It.IsAny<Booking>()))
+                .Returns((Booking b) => new BookingDto(b.Id, b.EventId, b.UserId, (Application.Models.BookingStatus)b.Status, b.CreatedAt, b.ProcessedAt)
+                {
+                    Id = b.Id,
+                    EventId = b.EventId,
+                    UserId = b.UserId,
+                    Status = (Application.Models.BookingStatus)b.Status,
+                    CreatedAt = b.CreatedAt,
+                    ProcessedAt = b.ProcessedAt
+                });
+            // Act
+            var result = await _bookingService.CancelBookingAsync(bookingId, adminId, role);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(bookingId, result.Id);
+            Assert.Equal(Application.Models.BookingStatus.Cancelled, result.Status);
+            Assert.NotNull(result.ProcessedAt);
+
+            Assert.Equal(50, existingEvent.AvailableSeats);
+
+            _bookingRepositoryMock.Verify(repo => repo.GetByIdAsync(bookingId), Times.Once);
+            _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(eventId), Times.Once);
+            _bookingRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Booking>()), Times.Once);
+            _eventRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Event>()), Times.Once);
+            _bookingDtoMapperServiceMock.Verify(mapper => mapper.EntityToDto(It.IsAny<Booking>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelBookingAsync_WhenOwnerCancelsOwnBooking_ShouldBeSuccessful()
+        {
+            // Arrange
+            var bookingId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var ownerId = Guid.NewGuid(); 
+            var role = "User";
+
+            var existingEvent = new Event(
+                eventId,
+                "Test Event",
+                DateTime.UtcNow.AddDays(1),
+                DateTime.UtcNow.AddDays(1).AddHours(3),
+                50
+            );
+            existingEvent.AvailableSeats = 49; 
+
+            var booking = new Booking(
+                id: bookingId,
+                eventId: eventId,
+                userId: ownerId,
+                status: Domain.Entities.BookingStatus.Pending,
+                createdAt: DateTime.UtcNow
+            );
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(bookingId))
+                .ReturnsAsync(booking);
+
+            _eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(eventId))
+                .ReturnsAsync(existingEvent);
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.UpdateAsync(It.IsAny<Booking>()))
+                .ReturnsAsync((Booking b) => b);
+
+            _eventRepositoryMock
+                .Setup(repo => repo.UpdateAsync(It.IsAny<Event>()))
+                .ReturnsAsync((Event e) => e);
+
+            _bookingDtoMapperServiceMock
+                .Setup(mapper => mapper.EntityToDto(It.IsAny<Booking>()))
+                .Returns((Booking b) => new BookingDto(b.Id, b.EventId, b.UserId, (Application.Models.BookingStatus)b.Status, b.CreatedAt, b.ProcessedAt)
+                {
+                    Id = b.Id,
+                    EventId = b.EventId,
+                    UserId = b.UserId,
+                    Status = (Application.Models.BookingStatus)b.Status,
+                    CreatedAt = b.CreatedAt,
+                    ProcessedAt = b.ProcessedAt
+                });
+
+
+            // Act
+            var result = await _bookingService.CancelBookingAsync(bookingId, ownerId, role);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(bookingId, result.Id);
+            Assert.Equal(Application.Models.BookingStatus.Cancelled, result.Status);
+            Assert.NotNull(result.ProcessedAt);
+
+            Assert.Equal(50, existingEvent.AvailableSeats);
+        }
+
+        [Fact]
+        public async Task CancelBookingAsync_WhenBookingDoesNotExist_ShouldThrowBookingNotFoundException()
+        {
+            // Arrange
+            var nonExistentBookingId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var role = "Admin"; 
+            Booking? nullBooking = null;
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(nonExistentBookingId))
+                .ReturnsAsync(nullBooking);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<BookingNotFoundException>(async () =>
+                await _bookingService.CancelBookingAsync(nonExistentBookingId, userId, role)
+            );
+
+            _bookingRepositoryMock.Verify(repo => repo.GetByIdAsync(nonExistentBookingId), Times.Once);
+            _bookingRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Booking>()), Times.Never);
+            _eventRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Event>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CancelBookingAsync_WhenBookingAlreadyCancelled_ShouldThrowBookingAlreadyInStatus()
+        {
+            // Arrange
+            var bookingId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var ownerId = Guid.NewGuid();
+            var role = "User";
+
+            var existingEvent = new Event(
+                eventId,
+                "Test Event",
+                DateTime.UtcNow.AddDays(1),
+                DateTime.UtcNow.AddDays(1).AddHours(3),
+                50
+            );
+
+            var cancelledBooking = new Booking(
+                id: bookingId,
+                eventId: eventId,
+                userId: ownerId,
+                status: Domain.Entities.BookingStatus.Cancelled,
+                createdAt: DateTime.UtcNow
+            );
+
+            cancelledBooking.ProcessedAt = DateTime.UtcNow;
+
+            _bookingRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(bookingId))
+                .ReturnsAsync(cancelledBooking);
+
+            _eventRepositoryMock
+                .Setup(repo => repo.GetByIdAsync(eventId))
+                .ReturnsAsync(existingEvent);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<BookingAlreadyInStatus>(async () =>
+                await _bookingService.CancelBookingAsync(bookingId, ownerId, role)
+            );
+
+            _bookingRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Booking>()), Times.Never);
+            _eventRepositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Event>()), Times.Never);
+        }
     }
 
 }
