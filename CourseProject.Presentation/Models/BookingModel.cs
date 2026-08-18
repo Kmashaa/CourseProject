@@ -31,7 +31,8 @@ namespace CourseProject.Presentation.Models
     {
         Pending = 1,
         Confirmed = 2,
-        Rejected = 3
+        Rejected = 3,
+        Cancelled = 4
     }
 
 }

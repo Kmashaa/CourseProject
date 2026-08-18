@@ -5,6 +5,7 @@ using CourseProject.Presentation.Interfaces;
 using CourseProject.Presentation.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CourseProject.Presentation.Controllers
 {
@@ -33,14 +34,27 @@ namespace CourseProject.Presentation.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var bookingDto = await _bookingService.GetBookingByIdAsync(id);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirst(ClaimTypes.Role);
 
-            if (bookingDto == null)
+
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId) && userRoleClaim != null)
             {
-                return NotFound(); // 404 Not found
+                string userRole = userRoleClaim.Value;
+
+                var bookingDto = await _bookingService.GetBookingByIdAsync(id, userId, userRole);
+
+                if (bookingDto == null)
+                {
+                    return NotFound(); // 404 Not found
+                }
+                var bookingModel = _bookingModelDtoMapperService.DtoToModel(bookingDto);
+                return Ok(bookingModel); // 200 Ok
             }
-            var bookingModel = _bookingModelDtoMapperService.DtoToModel(bookingDto);
-            return Ok(bookingModel); // 200 Ok
+            else
+            {
+                return Unauthorized("Неверный формат ID пользователя в токене");
+            }
         }
 
 
@@ -56,12 +70,25 @@ namespace CourseProject.Presentation.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await _bookingService.CancelBookingAsync(id, Guid.NewGuid()); //TODO guid, role
-            if (result == false)
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirst(ClaimTypes.Role);
+
+
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId) && userRoleClaim != null)
             {
-                return NotFound(); // 404 Not found
+                string userRole = userRoleClaim.Value;
+
+                var result = await _bookingService.CancelBookingAsync(id, userId, userRole);
+                if (result == null)
+                {
+                    return NotFound(); // 404 Not found
+                }
+                return Ok(_bookingModelDtoMapperService.DtoToModel(result)); // 204 No Content 
             }
-            return NoContent(); // 204 No Content //TODO cancelled booking
+            else
+            {
+                return Unauthorized("Неверный формат ID пользователя в токене");
+            }
         }
     }
 }

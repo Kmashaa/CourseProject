@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using CourseProject.Domain.Exceptions;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CourseProject.Domain.Entities
@@ -56,7 +57,7 @@ namespace CourseProject.Domain.Entities
             }
             else
             {
-                throw new Exception(); //TODO: exception
+                throw new BookingAlreadyInStatus(this);
             }
         }
 

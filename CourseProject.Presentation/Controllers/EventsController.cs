@@ -4,6 +4,7 @@ using CourseProject.Presentation.Interfaces;
 using CourseProject.Presentation.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CourseProject.Presentation.Controllers
 {
@@ -33,7 +34,6 @@ namespace CourseProject.Presentation.Controllers
         /// </summary>
         /// <returns>List of all events</returns>
         /// <response code="200">Event list received successfully</response>
-        [Authorize(Roles="Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] EventFilterModel eventFilterModel)
         {
@@ -136,8 +136,17 @@ namespace CourseProject.Presentation.Controllers
         [HttpPost("{id}/book")]
         public async Task<IActionResult> BookEvent(Guid id)
         {
-            var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id, Guid.NewGuid())); //TODO: user's guid
-            return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
+            {
+                var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id, userId));
+                return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel); 
+            }
+            else
+            {
+                return Unauthorized("Неверный формат ID пользователя в токене");
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using CourseProject.Application.Interfaces;
+using CourseProject.Application.Models;
 using CourseProject.Application.Services;
 using CourseProject.Presentation.Interfaces;
 using CourseProject.Presentation.Models;
@@ -22,28 +23,30 @@ namespace CourseProject.Presentation.Controllers
         /// Register new user
         /// </summary>
         /// <returns></returns>
-        /// <response code=""></response>
+        /// <response code="201">User created successfully</response>
+        /// <response code="400">Invalid user's data</response>
+
         [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
         {
-            var token = await _userService.RegisterUserAsync(registerModel.Login, registerModel.Password, registerModel.Role);
+            var userId = await _userService.RegisterUserAsync(registerModel.Login, registerModel.Password, registerModel.Role);
 
-            return Ok(token); // 201 Created //TODO вид ответа
+            return Created(nameof(Login), new { id = userId, login = registerModel.Login });
         }
 
         /// <summary>
         /// Login user
         /// </summary>
         /// <returns></returns>
-        /// <response code=""></response>
+        /// <response code="200">OK</response>
         [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
             var token = await _userService.LoginUserAsync(loginModel.Login, loginModel.Password);
 
-            return Ok(token); // 201 Created //TODO вид ответа
+            return Ok(new { token = token });
         }
 
     }

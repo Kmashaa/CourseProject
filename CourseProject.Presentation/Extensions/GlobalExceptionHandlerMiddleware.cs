@@ -68,6 +68,8 @@ namespace CourseProject.Presentation.Extensions
                 PastEventException _ => StatusCodes.Status400BadRequest,
                 ActiveBookingsLimit _ => StatusCodes.Status409Conflict,
                 NoPermissionException _ => StatusCodes.Status403Forbidden,
+                InvalidUsersData _ => StatusCodes.Status400BadRequest,
+                BookingAlreadyInStatus _ => StatusCodes.Status409Conflict,
                 _ => StatusCodes.Status500InternalServerError
             };
     }

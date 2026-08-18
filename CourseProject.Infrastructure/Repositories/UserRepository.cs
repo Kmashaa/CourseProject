@@ -1,5 +1,6 @@
 ﻿using CourseProject.Application.Interfaces;
 using CourseProject.Domain.Entities;
+using CourseProject.Domain.Exceptions;
 using CourseProject.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -33,9 +34,16 @@ namespace CourseProject.Infrastructure.Repositories
 
         public async Task<User> CreateAsync(User user)
         {
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
-            return user;
+            try
+            {
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+                return user;
+            } 
+            catch (DbUpdateException ex)
+            {
+                throw new InvalidUsersData();
+            }
 
         }
     }

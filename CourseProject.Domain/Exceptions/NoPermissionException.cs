@@ -11,7 +11,7 @@ namespace CourseProject.Domain.Exceptions
 
         public Guid? UserId { get; }
 
-        public NoPermissionException() : base("Unknown user error")
+        public NoPermissionException() : base("No permission")
         {
 
         }

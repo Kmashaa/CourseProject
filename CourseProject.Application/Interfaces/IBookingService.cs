@@ -7,8 +7,8 @@ namespace CourseProject.Application.Interfaces
     {
         Task<BookingDto?> CreateBookingAsync(Guid? eventId, Guid userId);
 
-        Task<BookingDto?> GetBookingByIdAsync(Guid bookingId);
+        Task<BookingDto?> GetBookingByIdAsync(Guid bookingId, Guid userId, string role);
 
-        Task<bool> CancelBookingAsync(Guid bookingId, Guid userId, Domain.Entities.Roles role = Domain.Entities.Roles.Admin);
+        Task<BookingDto?> CancelBookingAsync(Guid bookingId, Guid userId, string role);
     }
 }
