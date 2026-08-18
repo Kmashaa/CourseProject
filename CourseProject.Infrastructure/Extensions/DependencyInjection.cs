@@ -1,6 +1,7 @@
 ﻿using CourseProject.Application.Interfaces;
 using CourseProject.Infrastructure.DataAccess;
 using CourseProject.Infrastructure.Repositories;
+using CourseProject.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
 using Microsoft.Extensions.Configuration;
@@ -19,6 +20,13 @@ namespace CourseProject.Infrastructure.Extensions
 
             services.AddScoped<IEventRepository, EventRepository>();
             services.AddScoped<IBookingRepository, BookingRepository>();
+
+            services.Configure<JwtOptions>(options =>
+            {
+                configuration.GetSection(JwtOptions.SectionName).Bind(options);
+            });
+
+            services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
             return services;
         }
