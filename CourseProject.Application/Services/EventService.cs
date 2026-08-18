@@ -39,7 +39,7 @@ namespace CourseProject.Application.Services
 
             if (@event == null)
             {
-                throw new EventNotFoundException(@event, "Event not found");
+                throw new EventNotFoundException(id);
 
             }
 
