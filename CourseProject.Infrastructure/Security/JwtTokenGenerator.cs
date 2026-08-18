@@ -25,13 +25,13 @@ namespace CourseProject.Infrastructure.Security
             {
                 [JwtRegisteredClaimNames.Sub] = userId.ToString(),
                 [JwtRegisteredClaimNames.UniqueName] = login,
-                ["role"] = role,
+                ["role"] = role.ToString(),
                 [JwtRegisteredClaimNames.Jti] = Guid.NewGuid().ToString(),
             };
 
             // 2. Ключ и алгоритм подписи
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_jwtOptions.Key!));
+                Encoding.UTF8.GetBytes(_jwtOptions.Secret!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             // 3. Описание токена

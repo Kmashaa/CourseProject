@@ -87,7 +87,7 @@ namespace CourseProject.Application.Services
             return _bookingDtoMapperService.EntityToDto(booking);
         }
 
-        public async Task<bool> CancelBookingAsync(Guid bookingId, User user)
+        public async Task<bool> CancelBookingAsync(Guid bookingId, Guid userId, Domain.Entities.Roles role=Domain.Entities.Roles.Admin) //TODO get role
         {
 
 
@@ -101,7 +101,9 @@ namespace CourseProject.Application.Services
                     throw new BookingNotFoundException(booking, "Booking not found");
 
                 }
-                if (!(user.Role == Domain.Entities.Roles.Admin || booking.UserId == user.Id))
+
+
+                if (!(role == Domain.Entities.Roles.Admin || booking.UserId == userId))
                 {
                     throw new NoPermissionException();
                 }

@@ -20,6 +20,9 @@ namespace CourseProject.Infrastructure.Extensions
 
             services.AddScoped<IEventRepository, EventRepository>();
             services.AddScoped<IBookingRepository, BookingRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
 
             services.Configure<JwtOptions>(options =>
             {

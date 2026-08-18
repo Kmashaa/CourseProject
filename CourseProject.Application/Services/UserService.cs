@@ -35,6 +35,7 @@ namespace CourseProject.Application.Services
             {
                 var passwordHash = _passwordHasher.Hash(password);
                 var user = User.Create(login, passwordHash, enumRole);
+                await _userRepository.CreateAsync(user);
                 return user.Id;
             }
             else

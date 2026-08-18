@@ -9,6 +9,6 @@ namespace CourseProject.Application.Interfaces
 
         Task<BookingDto?> GetBookingByIdAsync(Guid bookingId);
 
-        Task<bool> CancelBookingAsync(Guid bookingId, User user);
+        Task<bool> CancelBookingAsync(Guid bookingId, Guid userId, Domain.Entities.Roles role = Domain.Entities.Roles.Admin);
     }
 }
