@@ -18,6 +18,7 @@
     <Project Path="CourseProject.Users.Presentation/CourseProject.Users.Presentation.csproj" />
   </Folder>
   <Project Path="CourseProject.Application/CourseProject.Application.csproj" Id="694b9652-d460-4056-b4d2-d96a112f6f8c" />
+  <Project Path="CourseProject.Contracts/CourseProject.Contracts.csproj" Id="ef19d23b-b409-48ce-a6c2-75d7eb197621" />
   <Project Path="CourseProject.Domain/CourseProject.Domain.csproj" Id="855a613f-0599-4360-8bce-a1691fec2e6d" />
   <Project Path="CourseProject.Infrastructure/CourseProject.Infrastructure.csproj" Id="42e3a001-6b25-4db1-bec6-329de8b3a060" />
   <Project Path="CourseProject.IntegrationTests/CourseProject.IntegrationTests.csproj" Id="6ad58b45-56fe-456a-8613-2c4fb4f51cde" />

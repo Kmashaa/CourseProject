@@ -97,3 +97,5 @@
 /CourseProject.Users.Infrastructure/obj
 /CourseProject.Users.Presentation/bin/Debug/net10.0
 /CourseProject.Users.Presentation/obj
+/CourseProject.Contracts/bin/Debug/net10.0
+/CourseProject.Contracts/obj
