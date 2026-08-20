@@ -1,4 +1,22 @@
 <Solution>
+  <Folder Name="/Bookings/">
+    <Project Path="CourseProject.Booking.Application/CourseProject.Booking.Application.csproj" Id="e9e62118-6e1b-48b5-bb94-4c54a67b76af" />
+    <Project Path="CourseProject.Booking.Domain/CourseProject.Booking.Domain.csproj" Id="cdb6acbe-19cd-4810-ac8e-11b07eb60df9" />
+    <Project Path="CourseProject.Booking.Infrastructure/CourseProject.Booking.Infrastructure.csproj" Id="92b729da-37f6-4a4c-b285-f2a6ad919882" />
+    <Project Path="CourseProject.Booking.Presentation/CourseProject.Booking.Presentation.csproj" Id="daf4bf3c-af1c-4d3e-9064-339e1cef8c69" />
+  </Folder>
+  <Folder Name="/Events/">
+    <Project Path="CourseProject.Event.Application/CourseProject.Event.Application.csproj" Id="fde0d733-4a91-4c5c-808c-d0de32690ba1" />
+    <Project Path="CourseProject.Event.Domain/CourseProject.Event.Domain.csproj" Id="6295908c-68fe-4047-92b6-98c33b974e19" />
+    <Project Path="CourseProject.Event.Infrastructure/CourseProject.Event.Infrastructure.csproj" Id="33d64342-30b0-4222-8b8d-949a1761f274" />
+    <Project Path="CourseProject.Event.Presentation/CourseProject.Event.Presentation.csproj" Id="d6727021-40a9-4535-8417-c0984b130ef1" />
+  </Folder>
+  <Folder Name="/Users/">
+    <Project Path="CourseProject.User.Application/CourseProject.User.Application.csproj" Id="e7db6203-5a04-43e4-85d2-969a9002c664" />
+    <Project Path="CourseProject.User.Domain/CourseProject.User.Domain.csproj" Id="558dfa59-f5a6-445c-a3c7-ae92a119df82" />
+    <Project Path="CourseProject.User.Infrastructure/CourseProject.User.Infrastructure.csproj" Id="22afcf3b-518b-4236-aec0-7cdb14ae9e24" />
+    <Project Path="CourseProject.User.Presentation/CourseProject.User.Presentation.csproj" Id="ba77f632-8f6e-4c70-af30-fd1c531a3c27" />
+  </Folder>
   <Project Path="CourseProject.Application/CourseProject.Application.csproj" Id="694b9652-d460-4056-b4d2-d96a112f6f8c" />
   <Project Path="CourseProject.Domain/CourseProject.Domain.csproj" Id="855a613f-0599-4360-8bce-a1691fec2e6d" />
   <Project Path="CourseProject.Infrastructure/CourseProject.Infrastructure.csproj" Id="42e3a001-6b25-4db1-bec6-329de8b3a060" />

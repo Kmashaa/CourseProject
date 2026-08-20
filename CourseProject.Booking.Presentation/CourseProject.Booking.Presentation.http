@@ -1,0 +1,6 @@
+@CourseProject.Bookings.Presentation_HostAddress = http://localhost:5136
+
+GET {{CourseProject.Bookings.Presentation_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
