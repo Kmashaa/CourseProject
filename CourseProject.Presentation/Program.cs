@@ -59,49 +59,6 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer("JwtBearerScheme", options =>
 {
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            Console.WriteLine($"Authentication failed: {context.Exception.GetType().Name}");
-            Console.WriteLine($"Message: {context.Exception.Message}");
-            Console.WriteLine($"Stack: {context.Exception.StackTrace}");
-            return Task.CompletedTask;
-        },
-        OnTokenValidated = context =>
-        {
-            Console.WriteLine("Token validated successfully");
-            Console.WriteLine($"User: {context.Principal.Identity.Name}");
-            return Task.CompletedTask;
-        },
-        OnChallenge = context =>
-        {
-            Console.WriteLine($"Challenge triggered");
-            return Task.CompletedTask;
-        },
-        OnMessageReceived = context =>
-        {
-            Console.WriteLine($"Full token: {context.Token}");
-            Console.WriteLine($"Token length: {context.Token?.Length}");
-
-            // Проверьте, что токен имеет 3 части (header.payload.signature)
-            if (!string.IsNullOrEmpty(context.Token))
-            {
-                var parts = context.Token.Split('.');
-                Console.WriteLine($"Token parts: {parts.Length}");
-                if (parts.Length == 3)
-                {
-                    Console.WriteLine("Token format is correct (3 parts)");
-                }
-                else
-                {
-                    Console.WriteLine($"ERROR: Token has {parts.Length} parts, expected 3");
-                }
-            }
-            return Task.CompletedTask;
-        }
-    };
-
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -120,6 +77,8 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]))
     };
 });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 

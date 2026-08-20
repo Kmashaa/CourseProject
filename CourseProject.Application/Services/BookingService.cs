@@ -78,19 +78,18 @@ namespace CourseProject.Application.Services
 
             var booking = await _bookingRepository.GetByIdAsync(bookingId);
 
-            Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
-
-            if (userRole != Domain.Entities.Roles.Admin && (booking == null || booking.UserId != userId))
-            {
-                throw new NoPermissionException(userId);
-            }
-
             if (booking == null)
             {
                 throw new BookingNotFoundException(booking, "Booking not found");
 
             }
 
+            Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
+
+            if (!(userRole == Domain.Entities.Roles.Admin || booking.UserId == userId))
+            {
+                throw new NoPermissionException(userId);
+            }
 
             return _bookingDtoMapperService.EntityToDto(booking);
         }
