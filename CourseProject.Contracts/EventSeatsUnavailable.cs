@@ -9,6 +9,13 @@ namespace CourseProject.Contracts
     {
         public const string TopicName = "Event-seats-unavailable";
 
+        public Guid BookingId { get; init; }
+
+        public Guid EventId { get; init; }
+
         public string? Reason { get; init; }
+
+        public DateTime CreatedAt { get; init; }
+
     }
 }

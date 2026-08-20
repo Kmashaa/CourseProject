@@ -8,6 +8,11 @@ namespace CourseProject.Contracts
     {
         public const string TopicName = "Event-seats-reserved";
 
-        public string? Reason { get; init; }
+        public Guid BookingId { get; init; }
+
+        public Guid EventId { get; init; }
+
+        public DateTime CreatedAt { get; init; }
+
     }
 }
