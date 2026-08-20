@@ -1,7 +1,6 @@
 ﻿using CourseProject.Bookings.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
-using CourseProject.Bookings.Application.Exceptions;
 
 namespace CourseProject.Bookings.Presentation.Extensions
 {

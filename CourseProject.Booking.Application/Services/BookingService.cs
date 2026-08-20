@@ -12,16 +12,16 @@ namespace CourseProject.Bookings.Application.Services
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         private readonly IBookingRepository _bookingRepository;
-        private readonly IEventRepository _eventRepository;
+        //private readonly IEventRepository _eventRepository;
         private readonly IBookingDtoMapperService _bookingDtoMapperService;
         private readonly IConfiguration _configuration;
 
 
 
-        public BookingService(IBookingRepository bookingRepository, IEventRepository eventRepository, IBookingDtoMapperService bookingDtoMapperService, IConfiguration configuration)
+        public BookingService(IBookingRepository bookingRepository, IBookingDtoMapperService bookingDtoMapperService, IConfiguration configuration)
         {
             _bookingRepository = bookingRepository;
-            _eventRepository = eventRepository;
+            //_eventRepository = eventRepository;
             _bookingDtoMapperService = bookingDtoMapperService;
             _configuration = configuration;
         }
@@ -31,7 +31,7 @@ namespace CourseProject.Bookings.Application.Services
         {
             if (eventId == null)
             {
-                throw new InvalidEventDataException();
+                //throw new InvalidEventDataException();
             }
 
             await _semaphore.WaitAsync(); //semaphore, а не lock, т.к. внутри асинхронный код
@@ -45,27 +45,28 @@ namespace CourseProject.Bookings.Application.Services
                 {
                     throw new ActiveBookingsLimit(userId, maxUserBookings);
                 }
+                throw new ActiveBookingsLimit(userId, maxUserBookings); //temp
 
-                var @event = await _eventRepository.GetByIdAsync((Guid)eventId);
-                if (@event == null)
-                {
-                    throw new EventNotFoundException((Guid)eventId);
-                }
-                if (@event.StartAt <= DateTime.Now)
-                {
-                    throw new PastEventException(@event.Id);
-                }
-                if (@event.TryReserveSeats())
-                {
-                    var booking = Booking.CreatePending(@event.Id, userId);
-                    await _bookingRepository.CreateAsync(booking);
-                    await _eventRepository.UpdateAsync(@event);
-                    return _bookingDtoMapperService.EntityToDto(booking);
-                }
-                else
-                {
-                    throw new NoAvailableSeatsException();
-                }
+                //var @event = await _eventRepository.GetByIdAsync((Guid)eventId);
+                //if (@event == null)
+                //{
+                //    throw new EventNotFoundException((Guid)eventId);
+                //}
+                //if (@event.StartAt <= DateTime.Now)
+                //{
+                //    throw new PastEventException(@event.Id);
+                //}
+                //if (@event.TryReserveSeats())
+                //{
+                //    var booking = Booking.CreatePending(@event.Id, userId);
+                //    await _bookingRepository.CreateAsync(booking);
+                //    //await _eventRepository.UpdateAsync(@event);
+                //    return _bookingDtoMapperService.EntityToDto(booking);
+                //}
+                //else
+                //{
+                //    //throw new NoAvailableSeatsException();
+                //}
             }
             finally
             {
@@ -84,12 +85,12 @@ namespace CourseProject.Bookings.Application.Services
 
             }
 
-            Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
+            //Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
 
-            if (!(userRole == Domain.Entities.Roles.Admin || booking.UserId == userId))
-            {
-                throw new NoPermissionException(userId);
-            }
+            //if (!(userRole == Domain.Entities.Roles.Admin || booking.UserId == userId))
+            //{
+            //    throw new NoPermissionException(userId);
+            //}
 
             return _bookingDtoMapperService.EntityToDto(booking);
         }
@@ -108,38 +109,40 @@ namespace CourseProject.Bookings.Application.Services
                     throw new BookingNotFoundException(booking, "Booking not found");
 
                 }
-                Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
+                throw new BookingNotFoundException(booking, "Booking not found"); //temp
 
-                if (!(userRole == Domain.Entities.Roles.Admin || booking.UserId == userId))
-                {
-                    throw new NoPermissionException(userId);
-                }
+                //Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
 
-                var @event = await _eventRepository.GetByIdAsync((Guid)booking.EventId);
+                //if (!(userRole == Domain.Entities.Roles.Admin || booking.UserId == userId))
+                //{
+                //    throw new NoPermissionException(userId);
+                //}
 
-                if (@event == null)
-                {
-                    throw new EventNotFoundException((Guid)booking.EventId);
-                }
+                //var @event = await _eventRepository.GetByIdAsync((Guid)booking.EventId);
 
-                if (@event.StartAt <= DateTime.Now && userRole != Domain.Entities.Roles.Admin)
-                {
-                    throw new PastEventException(@event.Id);
-                }
+                //if (@event == null)
+                //{
+                //    throw new EventNotFoundException((Guid)booking.EventId);
+                //}
+
+                //if (@event.StartAt <= DateTime.Now && userRole != Domain.Entities.Roles.Admin)
+                //{
+                //    throw new PastEventException(@event.Id);
+                //}
 
 
 
-                if (@event.ReleaseSeats())
-                {
-                    booking.Cancel();
-                    await _bookingRepository.UpdateAsync(booking);
-                    await _eventRepository.UpdateAsync(@event);
-                    return _bookingDtoMapperService.EntityToDto(booking);
-                }
-                else
-                {
-                    throw new InvalidEventDataException();
-                }
+                //if (@event.ReleaseSeats())
+                //{
+                //    booking.Cancel();
+                //    await _bookingRepository.UpdateAsync(booking);
+                //    await _eventRepository.UpdateAsync(@event);
+                //    return _bookingDtoMapperService.EntityToDto(booking);
+                //}
+                //else
+                //{
+                //    throw new InvalidEventDataException();
+                //}
             }
             finally
             {

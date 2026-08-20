@@ -139,8 +139,9 @@ namespace CourseProject.Events.Presentation.Controllers
 
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
             {
-                var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id, userId));
-                return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel); 
+                //var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id, userId));
+                //return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel); 
+                return Ok(); //temp
             }
             else
             {

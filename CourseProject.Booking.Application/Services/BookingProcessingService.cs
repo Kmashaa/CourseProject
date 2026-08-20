@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using CourseProject.Bookings.Domain.Entities;
 
 namespace CourseProject.Bookings.Application.Services
 {
@@ -63,13 +64,13 @@ namespace CourseProject.Bookings.Application.Services
 
             using var scope = _scopeFactory.CreateScope();
             var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
-            var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+            //var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
 
             try
             {
 
                 var booking = await bookingRepository.GetByIdAsync(bookingId);
-                var @event = await eventRepository.GetByIdAsync(booking.EventId);
+                Booking? @event = null;//await eventRepository.GetByIdAsync(booking.EventId); //temp
 
                 stoppingToken.ThrowIfCancellationRequested();
 
@@ -92,14 +93,14 @@ namespace CourseProject.Bookings.Application.Services
             catch
             {
                 var booking = await bookingRepository.GetByIdAsync(bookingId);
-                var @event = await eventRepository.GetByIdAsync(booking.EventId);
+                //var @event = await eventRepository.GetByIdAsync(booking.EventId);
 
 
                 booking.Reject();
-                @event?.ReleaseSeats();
+                //@event?.ReleaseSeats();
                 //await context.SaveChangesAsync(stoppingToken);
                 await bookingRepository.UpdateAsync(booking);
-                await eventRepository.UpdateAsync(@event);
+                //await eventRepository.UpdateAsync(@event);
                 _logger.LogWarning($"{DateTime.Now}: Заявка {booking.Id} отклонена");
 
             }

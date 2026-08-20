@@ -69,3 +69,7 @@
 /CourseProject.User.Infrastructure/obj
 /CourseProject.User.Presentation/bin/Debug/net10.0
 /CourseProject.User.Presentation/obj
+/CourseProject.Booking.Application/bin/Debug/net10.0
+/CourseProject.Booking.Infrastructure/bin/Debug/net10.0
+/CourseProject.Booking.Presentation/bin/Debug/net10.0
+/CourseProject.Event.Presentation/bin/Debug/net10.0
