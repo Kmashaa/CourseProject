@@ -61,9 +61,21 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc)
             );
@@ -104,9 +116,20 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -114,6 +137,7 @@ namespace CourseProject.IntegrationTests
             var booking2 = new Booking(
                 booking.Id,
                 @event.Id,
+                booking.UserId,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -142,9 +166,20 @@ namespace CourseProject.IntegrationTests
 
             await using var context = CreateContext();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 Guid.NewGuid(),
+                user.Id,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -182,9 +217,20 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -192,6 +238,7 @@ namespace CourseProject.IntegrationTests
             var booking2 = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -257,9 +304,20 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -301,9 +359,20 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -311,6 +380,7 @@ namespace CourseProject.IntegrationTests
             var booking2 = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -351,9 +421,20 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc)
             );
@@ -389,6 +470,7 @@ namespace CourseProject.IntegrationTests
             await using var context = CreateContext();
 
             var booking = new Booking(
+                Guid.NewGuid(),
                 Guid.NewGuid(),
                 Guid.NewGuid(),
                 BookingStatus.Pending,
@@ -427,9 +509,21 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc)
             );
@@ -471,9 +565,20 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc)
             );
@@ -511,9 +616,20 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc)
             );
@@ -563,9 +679,20 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
             var booking = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Pending,
                 DateTime.UtcNow
             );
@@ -573,6 +700,7 @@ namespace CourseProject.IntegrationTests
             var booking2 = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Confirmed,
                 DateTime.UtcNow
             );
@@ -580,6 +708,7 @@ namespace CourseProject.IntegrationTests
             var booking3 = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Rejected,
                 DateTime.UtcNow
             );
@@ -625,10 +754,21 @@ namespace CourseProject.IntegrationTests
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 
+            var user = new User(
+                Guid.NewGuid(),
+                "Test user 1",
+                "Test user 1",
+                CourseProject.Domain.Entities.Roles.Admin
+            );
+
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
 
             var booking2 = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Confirmed,
                 DateTime.UtcNow
             );
@@ -636,6 +776,7 @@ namespace CourseProject.IntegrationTests
             var booking3 = new Booking(
                 Guid.NewGuid(),
                 @event.Id,
+                user.Id,
                 BookingStatus.Rejected,
                 DateTime.UtcNow
             );

@@ -1,6 +1,6 @@
-﻿using CourseProject.Presentation.Interfaces;
+﻿using CourseProject.Application.Models;
+using CourseProject.Presentation.Interfaces;
 using CourseProject.Presentation.Models;
-using CourseProject.Application.Models;
 
 namespace CourseProject.Presentation.Services
 {
@@ -8,10 +8,11 @@ namespace CourseProject.Presentation.Services
     {
         public BookingDto ModelToDto(BookingModel bookingModel)
         {
-            BookingDto bookingDto = new(bookingModel.Id, bookingModel.EventId, (CourseProject.Application.Models.BookingStatus)bookingModel.Status, bookingModel.CreatedAt)
+            BookingDto bookingDto = new(bookingModel.Id, bookingModel.EventId, bookingModel.UserId, (CourseProject.Application.Models.BookingStatus)bookingModel.Status, bookingModel.CreatedAt)
             {
                 Id = bookingModel.Id,
                 EventId = bookingModel.EventId,
+                UserId = bookingModel.UserId,
                 Status = (Application.Models.BookingStatus)bookingModel.Status,
                 CreatedAt = bookingModel.CreatedAt,
                 ProcessedAt = bookingModel.ProcessedAt
@@ -27,6 +28,7 @@ namespace CourseProject.Presentation.Services
             {
                 Id = bookingDto.Id,
                 EventId = bookingDto.EventId,
+                UserId = bookingDto.UserId,
                 Status = (CourseProject.Presentation.Models.BookingStatus)bookingDto.Status,
                 CreatedAt = bookingDto.CreatedAt,
                 ProcessedAt = bookingDto.ProcessedAt

@@ -2,7 +2,9 @@
 //using CourseProject.Presentation.Exceptions;
 using CourseProject.Presentation.Interfaces;
 using CourseProject.Presentation.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CourseProject.Presentation.Controllers
 {
@@ -74,6 +76,7 @@ namespace CourseProject.Presentation.Controllers
         /// </summary>
         /// <returns>Created event</returns>
         /// <response code="201">Event created successfully</response>
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] EventModel eventModel)
         {
@@ -91,7 +94,7 @@ namespace CourseProject.Presentation.Controllers
         /// <response code="204">Event updated successfully. Returns no data</response>
         /// <response code="404">Event not found</response>
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] EventModel eventModel)
         {
@@ -109,7 +112,7 @@ namespace CourseProject.Presentation.Controllers
         /// <param name="id">Event ID</param>
         /// <response code="204">Event deleted successfully. Returns no data</response>
         /// <response code="404">Event not found</response>
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -129,11 +132,21 @@ namespace CourseProject.Presentation.Controllers
         /// <response code="404">Event was not found</response>
         /// <response code="409">Event no available seats for the event</response>
 
+        [Authorize]
         [HttpPost("{id}/book")]
         public async Task<IActionResult> BookEvent(Guid id)
         {
-            var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id));
-            return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
+            {
+                var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id, userId));
+                return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel); 
+            }
+            else
+            {
+                return Unauthorized("Неверный формат ID пользователя в токене");
+            }
         }
     }
 }

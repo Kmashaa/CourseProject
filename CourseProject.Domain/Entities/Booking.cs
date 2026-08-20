@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using CourseProject.Domain.Exceptions;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CourseProject.Domain.Entities
@@ -9,6 +10,8 @@ namespace CourseProject.Domain.Entities
 
         public required Guid EventId { get; init; }
 
+        public required Guid? UserId { get; init; }
+
         public required BookingStatus Status { get; set; }
 
         public required DateTime CreatedAt { get; set; }
@@ -17,14 +20,18 @@ namespace CourseProject.Domain.Entities
 
         public Event? Event { get; set; }
 
+        public User? User { get; set; }
+
+
         [SetsRequiredMembers]
         private Booking() { }
 
         [SetsRequiredMembers]
-        public Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt)
+        public Booking(Guid id, Guid eventId, Guid? userId, BookingStatus status, DateTime createdAt)
         {
             Id = id;
             EventId = eventId;
+            UserId = userId;
             Status = status;
             CreatedAt = createdAt;
         }
@@ -41,12 +48,29 @@ namespace CourseProject.Domain.Entities
             ProcessedAt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
         }
 
-        public static Booking CreatePending(Guid eventId)
+        public void Cancel ()
+        {
+            if (Status != BookingStatus.Cancelled)
+            {
+                Status = BookingStatus.Cancelled;
+                ProcessedAt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+            }
+            else
+            {
+                throw new BookingAlreadyInStatus(this);
+            }
+        }
+
+        public static Booking CreatePending(Guid eventId, Guid userId)
         {
             if (eventId == Guid.Empty)
                 throw new ValidationException(nameof(EventId));
 
-            return new Booking(Guid.NewGuid(), eventId, BookingStatus.Pending, DateTime.UtcNow);
+            if (userId == Guid.Empty)
+                throw new ValidationException(nameof(UserId));
+
+
+            return new Booking(Guid.NewGuid(), eventId, userId, BookingStatus.Pending, DateTime.UtcNow);
         }
 
     }
@@ -55,6 +79,7 @@ namespace CourseProject.Domain.Entities
     {
         Pending = 1,
         Confirmed = 2,
-        Rejected = 3
+        Rejected = 3,
+        Cancelled = 4
     }
 }

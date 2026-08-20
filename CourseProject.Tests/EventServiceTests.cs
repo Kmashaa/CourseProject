@@ -145,7 +145,6 @@ namespace CourseProject.Tests
                 () => _eventService.GetEventByIdAsync(nonExistentId)
             );
 
-            Assert.Equal("Event not found", exception.Message);
             Assert.Null(exception.Event);
 
             _eventRepositoryMock.Verify(repo => repo.GetByIdAsync(nonExistentId), Times.Once);

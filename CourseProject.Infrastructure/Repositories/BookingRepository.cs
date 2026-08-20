@@ -1,7 +1,7 @@
-﻿using CourseProject.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using CourseProject.Application.Interfaces;
+using CourseProject.Domain.Entities;
 using CourseProject.Infrastructure.DataAccess;
-using CourseProject.Application.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace CourseProject.Infrastructure.Repositories
@@ -72,5 +72,16 @@ namespace CourseProject.Infrastructure.Repositories
             return pendings;
 
         }
+
+        public async Task<int> GetActiveBookingsCountByUserIdAsync(Guid userId)
+        {
+            var actives = _context.Bookings
+                .Where(b => (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Pending) && b.UserId == userId)
+                .Count();
+
+            return actives;
+
+        }
+
     }
 }
