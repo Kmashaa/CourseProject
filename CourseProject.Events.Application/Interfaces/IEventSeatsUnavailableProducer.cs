@@ -7,7 +7,7 @@ namespace CourseProject.Events.Application.Interfaces
 {
     public interface IEventSeatsUnavailableProducer
     {
-        Task PublishEventSeatsUnavailable(Guid bookingId, Guid eventId, string? reason, CancellationToken ct = default);
+        Task PublishEventSeatsUnavailable(Guid bookingId, Guid eventId, Guid userId, string? reason, CancellationToken ct = default);
 
     }
 }

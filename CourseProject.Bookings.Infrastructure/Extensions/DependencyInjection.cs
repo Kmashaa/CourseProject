@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using CourseProject.Bookings.Application.Interfaces;
 using CourseProject.Bookings.Infrastructure.DataAccess;
+using CourseProject.Bookings.Infrastructure.Messaging.Consumers;
 using CourseProject.Bookings.Infrastructure.Messaging.Producers;
 using CourseProject.Bookings.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,14 @@ namespace CourseProject.Bookings.Infrastructure.Extensions
 
             services.AddScoped<IBookingRepository, BookingRepository>();
 
+
+            services.AddHostedService<KafkaTopicInitializer>();
+
+            services.AddHostedService<EventAvailablenessConsumer>();
+
             services.AddSingleton<IBookingCreatedProducer, BookingCreatedProducer>();
+            services.AddSingleton<IBookingConfirmedProducer, BookingConfirmedProducer>();
+            services.AddSingleton<IBookingRejectedProducer, BookingRejectedProducer>();
 
             return services;
         }

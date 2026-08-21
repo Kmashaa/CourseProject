@@ -28,8 +28,4 @@
     <ProjectReference Include="..\CourseProject.Contracts\CourseProject.Contracts.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Messaging\Consumers\" />
-  </ItemGroup>
-
 </Project>

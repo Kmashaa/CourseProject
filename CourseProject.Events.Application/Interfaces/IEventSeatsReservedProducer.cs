@@ -6,7 +6,7 @@ namespace CourseProject.Events.Application.Interfaces
 {
     public interface IEventSeatsReservedProducer
     {
-        Task PublishEventSeatsReserved(Guid bookingId, Guid eventId, CancellationToken ct = default);
+        Task PublishEventSeatsReserved(Guid bookingId, Guid eventId, Guid userId, CancellationToken ct = default);
 
     }
 }

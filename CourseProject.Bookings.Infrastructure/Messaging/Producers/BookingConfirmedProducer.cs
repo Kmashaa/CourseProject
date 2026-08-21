@@ -1,16 +1,16 @@
 ﻿using Confluent.Kafka;
-using CourseProject.Events.Application.Interfaces;
+using CourseProject.Bookings.Application.Interfaces;
 using CourseProject.Contracts;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 
-namespace CourseProject.Events.Infrastructure.Messaging.Producers
+namespace CourseProject.Bookings.Infrastructure.Messaging.Producers
 {
-    public class EventSeatsReservedProducer : IEventSeatsReservedProducer, IDisposable
+    public class BookingConfirmedProducer : IBookingConfirmedProducer, IDisposable
     {
         private readonly IProducer<string, string> _producer;
 
-        public EventSeatsReservedProducer(IConfiguration configuration)
+        public BookingConfirmedProducer(IConfiguration configuration)
         {
             var config = new ProducerConfig
             {
@@ -22,20 +22,21 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
 
         }
 
-        public async Task PublishEventSeatsReserved(Guid bookingId, Guid eventId, Guid userId, CancellationToken ct = default)
+        public async Task PublishBookingConfirmed(Guid bookingId, Guid eventId, Guid userId, int numOfSeats = 1, CancellationToken ct = default)
         {
-            var eventSeatsReserved = new EventSeatsReserved
+            var bookingCreated = new BookingConfirmed
             {
                 BookingId = bookingId,
                 EventId = eventId,
                 UserId = userId,
+                NumOfSeats = numOfSeats,
                 CreatedAt = DateTime.UtcNow
             };
 
-            var result = await _producer.ProduceAsync(EventSeatsReserved.TopicName, new Message<string, string>
+            var result = await _producer.ProduceAsync(BookingConfirmed.TopicName, new Message<string, string>
             {
                 Key = eventId.ToString(),
-                Value = JsonSerializer.Serialize(eventSeatsReserved)
+                Value = JsonSerializer.Serialize(bookingCreated)
             },
             ct);
 

@@ -22,12 +22,13 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
 
         }
 
-        public async Task PublishEventSeatsUnavailable(Guid bookingId, Guid eventId, string? reason, CancellationToken ct = default)
+        public async Task PublishEventSeatsUnavailable(Guid bookingId, Guid eventId, Guid userId, string? reason, CancellationToken ct = default)
         {
             var bookingCreated = new EventSeatsUnavailable
             {
                 BookingId = bookingId,
                 EventId = eventId,
+                UserId = userId,
                 Reason = reason,
                 CreatedAt = DateTime.UtcNow
             };

@@ -93,7 +93,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             {
                                 _logger.LogWarning("Событие EventId={EventId} не найдено для BookingId={BookingId}. Пропуск сообщения.", bookingCreated.EventId, bookingCreated.BookingId);
 
-                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, "event doesn't exist", stoppingToken); //TODO: outbox
+                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "event doesn't exist", stoppingToken); 
                                 Console.WriteLine("event doesn't exist");
                                 FinalizeMessageProcessing(consumer, consumeResult);
                                 continue;
@@ -103,7 +103,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             {
                                 _logger.LogWarning("Событие EventId={EventId} уже началось. Резервация невозможна.", @event.Id);
 
-                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, "event has already started", stoppingToken); //TODO: outbox
+                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "event has already started", stoppingToken); 
                                 Console.WriteLine("event has already started");
                                 FinalizeMessageProcessing(consumer, consumeResult);
                                 continue;
@@ -112,14 +112,14 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             if (@event.TryReserveSeats())
                             {
                                 await eventRepository.UpdateAsync(@event);
-                                await eventSeatsReservedProducer.PublishEventSeatsReserved(bookingCreated.BookingId, bookingCreated.EventId, stoppingToken); //TODO: outbox
+                                await eventSeatsReservedProducer.PublishEventSeatsReserved(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, stoppingToken); 
                                 Console.WriteLine("Seats: " + @event.AvailableSeats);
                             }
                             else
                             {
                                 _logger.LogWarning("Нет свободных мест на событие EventId={EventId}.", @event.Id);
 
-                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, "no available seats", stoppingToken); //TODO: outbox
+                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "no available seats", stoppingToken); 
                                 Console.WriteLine("no available seats");
                             }
                         }

@@ -47,7 +47,7 @@ namespace CourseProject.Bookings.Application.Services
                 var booking = Booking.CreatePending(validEventId, userId);
 
                 await _bookingRepository.CreateAsync(booking);
-                await _bookingCreatedProducer.PublishBookingCreated(booking.Id, validEventId, userId); //TODO: outbox
+                await _bookingCreatedProducer.PublishBookingCreated(booking.Id, validEventId, userId);
 
                 return _bookingDtoMapperService.EntityToDto(booking);
             }
@@ -94,38 +94,8 @@ namespace CourseProject.Bookings.Application.Services
                 }
                 throw new BookingNotFoundException(booking, "Booking not found"); //temp
 
-                //Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
 
-                //if (!(userRole == Domain.Entities.Roles.Admin || booking.UserId == userId))
-                //{
-                //    throw new NoPermissionException(userId);
-                //}
-
-                //var @event = await _eventRepository.GetByIdAsync((Guid)booking.EventId);
-
-                //if (@event == null)
-                //{
-                //    throw new EventNotFoundException((Guid)booking.EventId);
-                //}
-
-                //if (@event.StartAt <= DateTime.Now && userRole != Domain.Entities.Roles.Admin)
-                //{
-                //    throw new PastEventException(@event.Id);
-                //}
-
-
-
-                //if (@event.ReleaseSeats())
-                //{
-                //    booking.Cancel();
-                //    await _bookingRepository.UpdateAsync(booking);
-                //    await _eventRepository.UpdateAsync(@event);
-                //    return _bookingDtoMapperService.EntityToDto(booking);
-                //}
-                //else
-                //{
-                //    throw new InvalidEventDataException();
-                //}
+   
             }
             finally
             {
