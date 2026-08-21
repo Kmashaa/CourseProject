@@ -25,11 +25,11 @@
 
 5. После запуска сервисы будут доступны по адресам:
 
-Users API: http://localhost:7127
+Users API: http://localhost:7127 (http://localhost:7127/swagger/index.html)
 
-Events API: http://localhost:7128
+Events API: http://localhost:7128 (http://localhost:7128/swagger/index.html)
 
-Bookings API: http://localhost:7129
+Bookings API: http://localhost:7129 (http://localhost:7129/swagger/index.html)
 
 
 ## Состав системы
