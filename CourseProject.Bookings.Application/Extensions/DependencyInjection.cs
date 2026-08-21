@@ -2,6 +2,7 @@
 using CourseProject.Bookings.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
+
 namespace CourseProject.Bookings.Application.Extensions
 {
     public static class DependencyInjection
@@ -11,7 +12,7 @@ namespace CourseProject.Bookings.Application.Extensions
             services.AddScoped<IBookingService, BookingService>();
 
             services.AddSingleton<IBookingDtoMapperService, BookingDtoMapperService>();
-            services.AddHostedService<BookingProcessingService>();
+            //services.AddHostedService<BookingProcessingService>();
 
             return services;
 

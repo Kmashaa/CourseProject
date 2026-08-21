@@ -81,8 +81,7 @@ namespace CourseProject.Events.Domain.Entities
             }
             else
             {
-                throw new NoAvailableSeatsException();
-                //return false;
+                return false;
             }
         }
 

@@ -14,6 +14,7 @@ namespace CourseProject.Events.Application.Extensions
             services.AddSingleton<IEventFilterDtoMapperService, EventFilterDtoMapperService>();
             services.AddSingleton<IPaginatedResultDtoMapperService, PaginatedResultDtoMapperService>();
 
+
             return services;
 
         }

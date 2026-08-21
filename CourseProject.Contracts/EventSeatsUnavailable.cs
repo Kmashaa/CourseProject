@@ -7,7 +7,7 @@ namespace CourseProject.Contracts
 {
     public record EventSeatsUnavailable
     {
-        public const string TopicName = "Event-seats-unavailable";
+        public const string TopicName = "event-seats-unavailable";
 
         public Guid BookingId { get; init; }
 

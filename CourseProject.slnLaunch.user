@@ -3,20 +3,16 @@
     "Name": "New Profile",
     "Projects": [
       {
-        "Path": "CourseProject.Application\\CourseProject.Application.csproj",
-        "Action": "Start"
+        "Path": "CourseProject.Bookings.Presentation\\CourseProject.Bookings.Presentation.csproj",
+        "Action": "StartWithoutDebugging"
       },
       {
-        "Path": "CourseProject.Domain\\CourseProject.Domain.csproj",
-        "Action": "Start"
+        "Path": "CourseProject.Events.Presentation\\CourseProject.Events.Presentation.csproj",
+        "Action": "StartWithoutDebugging"
       },
       {
-        "Path": "CourseProject.Infrastructure\\CourseProject.Infrastructure.csproj",
-        "Action": "Start"
-      },
-      {
-        "Path": "CourseProject.Presentation\\CourseProject.Presentation.csproj",
-        "Action": "Start"
+        "Path": "CourseProject.Users.Presentation\\CourseProject.Users.Presentation.csproj",
+        "Action": "StartWithoutDebugging"
       }
     ]
   }
