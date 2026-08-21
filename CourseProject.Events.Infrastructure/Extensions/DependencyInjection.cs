@@ -23,6 +23,8 @@ namespace CourseProject.Events.Infrastructure.Extensions
             services.AddHostedService<KafkaTopicInitializer>();
 
             services.AddHostedService<BookingCreatedConsumer>();
+            services.AddHostedService<BookingCancelledConsumer>();
+
 
             services.AddSingleton<IEventSeatsReservedProducer, EventSeatsReservedProducer>();
             services.AddSingleton<IEventSeatsUnavailableProducer, EventSeatsUnavailableProducer>();

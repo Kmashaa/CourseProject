@@ -45,16 +45,20 @@ namespace CourseProject.Bookings.Domain.Entities
             ProcessedAt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
         }
 
-        public void Cancel ()
+        public void Cancel()
         {
-            if (Status != BookingStatus.Cancelled)
+            if (Status == BookingStatus.Confirmed)
             {
                 Status = BookingStatus.Cancelled;
                 ProcessedAt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
             }
-            else
+            else if (Status == BookingStatus.Cancelled)
             {
                 throw new BookingAlreadyInStatus(this);
+            }
+            else
+            {
+                throw new InvalidBookingDataException();
             }
         }
 

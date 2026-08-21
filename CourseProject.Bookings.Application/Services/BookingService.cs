@@ -1,9 +1,10 @@
 ﻿using CourseProject.Bookings.Application.Interfaces;
-using CourseProject.Bookings.Application.Interfaces;
 using CourseProject.Bookings.Application.Models;
 using CourseProject.Bookings.Domain.Entities;
 using CourseProject.Bookings.Domain.Exceptions;
+using CourseProject.Contracts;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace CourseProject.Bookings.Application.Services
 {
@@ -15,13 +16,18 @@ namespace CourseProject.Bookings.Application.Services
         private readonly IBookingDtoMapperService _bookingDtoMapperService;
         private readonly IConfiguration _configuration;
         private readonly IBookingCreatedProducer _bookingCreatedProducer;
+        private readonly IBookingCancelledProducer _bookingCancelledProducer;
+        private readonly ILogger<BookingService> _logger;
 
-        public BookingService(IBookingRepository bookingRepository, IBookingDtoMapperService bookingDtoMapperService, IConfiguration configuration, IBookingCreatedProducer bookingCreatedProducer)
+
+        public BookingService(IBookingRepository bookingRepository, IBookingDtoMapperService bookingDtoMapperService, IConfiguration configuration, IBookingCreatedProducer bookingCreatedProducer, IBookingCancelledProducer bookingCancelledProducer, ILogger<BookingService> logger)
         {
             _bookingRepository = bookingRepository;
             _bookingDtoMapperService = bookingDtoMapperService;
             _configuration = configuration;
             _bookingCreatedProducer = bookingCreatedProducer;
+            _bookingCancelledProducer = bookingCancelledProducer;
+            _logger = logger;
         }
 
 
@@ -43,7 +49,7 @@ namespace CourseProject.Bookings.Application.Services
                 {
                     throw new ActiveBookingsLimit(userId, maxUserBookings);
                 }
-                
+
                 var booking = Booking.CreatePending(validEventId, userId);
 
                 await _bookingRepository.CreateAsync(booking);
@@ -68,12 +74,16 @@ namespace CourseProject.Bookings.Application.Services
 
             }
 
-            //Enum.TryParse<Domain.Entities.Roles>(role, ignoreCase: true, out Domain.Entities.Roles userRole);
+            Enum.TryParse<UserRoles>(role, ignoreCase: true, out UserRoles userRole);
 
-            //if (!(userRole == Domain.Entities.Roles.Admin || booking.UserId == userId))
-            //{
-            //    throw new NoPermissionException(userId);
-            //}
+            Console.WriteLine(role + "  " + userRole.ToString());
+            _logger.LogInformation(role + "  " + userRole.ToString());
+
+
+            if (!(userRole == UserRoles.Admin || booking.UserId == userId))
+            {
+                throw new NoPermissionException(userId);
+            }
 
             return _bookingDtoMapperService.EntityToDto(booking);
         }
@@ -90,12 +100,23 @@ namespace CourseProject.Bookings.Application.Services
                 if (booking == null)
                 {
                     throw new BookingNotFoundException(booking, "Booking not found");
-
                 }
-                throw new BookingNotFoundException(booking, "Booking not found"); //temp
+
+                Enum.TryParse<UserRoles>(role, ignoreCase: true, out UserRoles userRole);
+
+                if (!(userRole == UserRoles.Admin || booking.UserId == userId))
+                {
+                    throw new NoPermissionException(userId);
+                }
+
+                booking.Cancel();
+                await _bookingRepository.UpdateAsync(booking);
+
+                await _bookingCancelledProducer.PublishBookingCancelled(booking.Id, booking.EventId, userId);
+
+                return _bookingDtoMapperService.EntityToDto(booking);
 
 
-   
             }
             finally
             {

@@ -30,6 +30,7 @@ namespace CourseProject.Bookings.Infrastructure.Extensions
             services.AddSingleton<IBookingCreatedProducer, BookingCreatedProducer>();
             services.AddSingleton<IBookingConfirmedProducer, BookingConfirmedProducer>();
             services.AddSingleton<IBookingRejectedProducer, BookingRejectedProducer>();
+            services.AddSingleton<IBookingCancelledProducer, BookingCancelledProducer>();
 
             return services;
         }

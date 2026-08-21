@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CourseProject.Bookings.Domain\CourseProject.Bookings.Domain.csproj" />
+    <ProjectReference Include="..\CourseProject.Contracts\CourseProject.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

@@ -72,8 +72,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                             if (eventSeatsReserved == null)
                             {
                                 _logger.LogWarning("Получено пустое или некорректное сообщение. Пропуск.");
-                                consumer.StoreOffset(consumeResult);
-                                consumer.Commit(consumeResult);
+                                FinalizeMessageProcessing(consumer, consumeResult);
                                 continue;
                             }
 
@@ -96,26 +95,19 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 {
                                     _logger.LogWarning("BookingId={BookingId} не найдено. Пропуск сообщения.", eventSeatsReserved.BookingId);
 
-                                    booking.Reject();
-                                    await bookingRepository.UpdateAsync(booking);
-
                                     await bookingRejectedProducer.PublishBookingRejected(eventSeatsReserved.BookingId, eventSeatsReserved.EventId, eventSeatsReserved.UserId); 
                                     Console.WriteLine("booking doesn't exist");
                                     FinalizeMessageProcessing(consumer, consumeResult);
                                     continue;
 
                                 }
+
                                 booking.Confirm();
                                 await bookingRepository.UpdateAsync(booking);
 
                                 await bookingConfirmedProducer.PublishBookingConfirmed(eventSeatsReserved.BookingId, eventSeatsReserved.EventId, eventSeatsReserved.UserId); 
                                 Console.WriteLine("booking confirmed");
-                                FinalizeMessageProcessing(consumer, consumeResult);
-
-
                             }
-                            FinalizeMessageProcessing(consumer, consumeResult);
-
                         }
                         else if (consumeResult.Topic == EventSeatsUnavailable.TopicName)
                         {
@@ -123,8 +115,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                             if (eventSeatsUnavailable == null)
                             {
                                 _logger.LogWarning("Получено пустое или некорректное сообщение. Пропуск.");
-                                consumer.StoreOffset(consumeResult);
-                                consumer.Commit(consumeResult);
+                                FinalizeMessageProcessing(consumer, consumeResult);
                                 continue;
                             }
 
@@ -146,9 +137,6 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 {
                                     _logger.LogWarning("BookingId={BookingId} не найдено. Пропуск сообщения.", eventSeatsUnavailable.BookingId);
 
-                                    booking.Reject();
-                                    await bookingRepository.UpdateAsync(booking);
-
                                     await bookingRejectedProducer.PublishBookingRejected(eventSeatsUnavailable.BookingId, eventSeatsUnavailable.EventId, eventSeatsUnavailable.UserId); 
                                     Console.WriteLine("booking doesn't exist");
                                     FinalizeMessageProcessing(consumer, consumeResult);
@@ -159,17 +147,11 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 booking.Reject();
                                 await bookingRepository.UpdateAsync(booking);
 
-                                await bookingRejectedProducer.PublishBookingRejected(eventSeatsUnavailable.BookingId, eventSeatsUnavailable.EventId, eventSeatsUnavailable.UserId);
+                                await bookingRejectedProducer.PublishBookingRejected(eventSeatsUnavailable.BookingId, eventSeatsUnavailable.EventId, eventSeatsUnavailable.UserId); 
                                 Console.WriteLine("booking rejected");
-                                FinalizeMessageProcessing(consumer, consumeResult);
-
-
                             }
-                            FinalizeMessageProcessing(consumer, consumeResult);
                         }
-
-                        
-
+                        FinalizeMessageProcessing(consumer, consumeResult);
                     }
                     catch (JsonException ex)
                     {
@@ -180,6 +162,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Ошибка обработки сообщения бизнес-логикой (БД/Продюсер).");
+                        FinalizeMessageProcessing(consumer, consumeResult);
                     }
                 }
             }
