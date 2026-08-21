@@ -1,6 +1,37 @@
 # Проект для курса "Продвинутая разработка на C# и .NET"
 Система состоит из трёх микросервисов, каждый со своей базой данных PostgreSQL. Обмен сообщениями между сервисами выполняется через Apache Kafka. Все компоненты контейнеризированы и управляются через Docker Compose.
 
+### Инструкция
+1. Клонируйте репозиторий
+    ```
+    git clone https://github.com/Kmashaa/CourseProject.git
+    ``` 
+2. Перейдите в папку пректа
+    ```
+	cd CourseProject
+    ```
+3. Перейдите в нужную ветку
+    ```
+	git switch sprint-9
+    ```
+
+4. Запустите проект
+
+    ```
+	docker compose up -d --build
+    ```
+
+(Для остановки и удаления контейнеров: docker compose down)
+
+5. После запуска сервисы будут доступны по адресам:
+
+Users API: http://localhost:7127
+
+Events API: http://localhost:7128
+
+Bookings API: http://localhost:7129
+
+
 ## Состав системы
 
 | Сервис             | Описание                              | Технологии                       | Порт хоста | Порт контейнера |
@@ -69,44 +100,6 @@
 - Установленный Docker и Docker Compose.
 - .NET 10.0 SDK (для локальной разработки и тестов).
   
-### Инструкция
-1. Клонируйте репозиторий
-    ```
-    git clone https://github.com/Kmashaa/CourseProject.git
-    ``` 
-2. Перейдите в папку пректа
-    ```
-	cd CourseProject
-    ```
-3. Перейдите в нужную ветку
-    ```
-	git switch sprint-9
-    ```
-
-4. Запустите тесты
-	```
-	dotnet test
-	```
-5. Запустите интеграционные тесты (требуется Docker)
-   ```
-	dotnet test CourseProject.IntegrationTests
-   ```
-6. Запустите проект
-
-    ```
-	docker compose up -d --build
-    ```
-
-(Для остановки и удаления контейнеров: docker compose down)
-7. После запуска сервисы будут доступны по адресам:
-
-Users API: http://localhost:7127
-
-Events API: http://localhost:7128
-
-Bookings API: http://localhost:7129
-
-
 
 ## Управление схемой базы данных через миграции EF Core
 
