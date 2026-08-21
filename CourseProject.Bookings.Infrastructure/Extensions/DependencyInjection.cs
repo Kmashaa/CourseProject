@@ -1,5 +1,7 @@
-﻿using CourseProject.Bookings.Application.Interfaces;
+﻿using Confluent.Kafka;
+using CourseProject.Bookings.Application.Interfaces;
 using CourseProject.Bookings.Infrastructure.DataAccess;
+using CourseProject.Bookings.Infrastructure.Messaging.Producers;
 using CourseProject.Bookings.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +20,8 @@ namespace CourseProject.Bookings.Infrastructure.Extensions
                 options.UseNpgsql(connectionString));
 
             services.AddScoped<IBookingRepository, BookingRepository>();
+
+            services.AddSingleton<IBookingCreatedProducer, BookingCreatedProducer>();
 
             return services;
         }

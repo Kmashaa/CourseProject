@@ -12,26 +12,24 @@ namespace CourseProject.Bookings.Application.Services
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         private readonly IBookingRepository _bookingRepository;
-        //private readonly IEventRepository _eventRepository;
         private readonly IBookingDtoMapperService _bookingDtoMapperService;
         private readonly IConfiguration _configuration;
+        private readonly IBookingCreatedProducer _bookingCreatedProducer;
 
-
-
-        public BookingService(IBookingRepository bookingRepository, IBookingDtoMapperService bookingDtoMapperService, IConfiguration configuration)
+        public BookingService(IBookingRepository bookingRepository, IBookingDtoMapperService bookingDtoMapperService, IConfiguration configuration, IBookingCreatedProducer bookingCreatedProducer)
         {
             _bookingRepository = bookingRepository;
-            //_eventRepository = eventRepository;
             _bookingDtoMapperService = bookingDtoMapperService;
             _configuration = configuration;
+            _bookingCreatedProducer = bookingCreatedProducer;
         }
 
 
         public async Task<BookingDto?> CreateBookingAsync(Guid? eventId, Guid userId)
         {
-            if (eventId == null)
+            if (eventId is not Guid validEventId)
             {
-                //throw new InvalidEventDataException();
+                throw new InvalidBookingDataException();
             }
 
             await _semaphore.WaitAsync(); //semaphore, а не lock, т.к. внутри асинхронный код
@@ -45,28 +43,13 @@ namespace CourseProject.Bookings.Application.Services
                 {
                     throw new ActiveBookingsLimit(userId, maxUserBookings);
                 }
-                throw new ActiveBookingsLimit(userId, maxUserBookings); //temp
+                
+                var booking = Booking.CreatePending(validEventId, userId);
 
-                //var @event = await _eventRepository.GetByIdAsync((Guid)eventId);
-                //if (@event == null)
-                //{
-                //    throw new EventNotFoundException((Guid)eventId);
-                //}
-                //if (@event.StartAt <= DateTime.Now)
-                //{
-                //    throw new PastEventException(@event.Id);
-                //}
-                //if (@event.TryReserveSeats())
-                //{
-                //    var booking = Booking.CreatePending(@event.Id, userId);
-                //    await _bookingRepository.CreateAsync(booking);
-                //    //await _eventRepository.UpdateAsync(@event);
-                //    return _bookingDtoMapperService.EntityToDto(booking);
-                //}
-                //else
-                //{
-                //    //throw new NoAvailableSeatsException();
-                //}
+                await _bookingRepository.CreateAsync(booking);
+                await _bookingCreatedProducer.PublishBookingCreated(booking.Id, validEventId, userId); //TODO: outbox
+
+                return _bookingDtoMapperService.EntityToDto(booking);
             }
             finally
             {

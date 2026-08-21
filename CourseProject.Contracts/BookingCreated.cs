@@ -1,4 +1,4 @@
-namespace OrderConsumer.Contracts;
+namespace CourseProject.Contracts;
 
 public record BookingCreated
 {

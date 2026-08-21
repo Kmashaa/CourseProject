@@ -122,31 +122,5 @@ namespace CourseProject.Events.Presentation.Controllers
             }
             return NoContent(); // 204 No Content
         }
-
-        /// <summary>
-        /// Book event
-        /// </summary>
-        /// <returns>Booking detailst</returns>
-        /// <response code="202">Bookings was accepted successfully</response>
-        /// <response code="404">Event was not found</response>
-        /// <response code="409">Event no available seats for the event</response>
-
-        [Authorize]
-        [HttpPost("{id}/book")]
-        public async Task<IActionResult> BookEvent(Guid id)
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-
-            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
-            {
-                //var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(id, userId));
-                //return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel); 
-                return Ok(); //temp
-            }
-            else
-            {
-                return Unauthorized("Неверный формат ID пользователя в токене");
-            }
-        }
     }
 }

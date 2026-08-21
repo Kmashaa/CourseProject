@@ -90,5 +90,30 @@ namespace CourseProject.Bookings.Presentation.Controllers
                 return Unauthorized("Неверный формат ID пользователя в токене");
             }
         }
+
+        /// <summary>
+        /// Book event
+        /// </summary>
+        /// <returns>Booking details</returns>
+        /// <response code="202">Bookings was accepted successfully</response>
+        /// <response code="404">Event was not found</response>
+        /// <response code="409">Event no available seats for the event</response>
+
+        [Authorize]
+        [HttpPost("{eventId}/book")]
+        public async Task<IActionResult> BookEvent(Guid eventId)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
+            {
+                var bookingModel = _bookingModelDtoMapperService.DtoToModel(await _bookingService.CreateBookingAsync(eventId, userId));
+                return AcceptedAtAction(nameof(BookingsController.GetById), "Bookings", new { id = bookingModel.Id }, bookingModel);
+            }
+            else
+            {
+                return Unauthorized("Неверный формат ID пользователя в токене");
+            }
+        }
     }
 }
