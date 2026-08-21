@@ -1,10 +1,74 @@
 # Проект для курса "Продвинутая разработка на C# и .NET"
+Система состоит из трёх микросервисов, каждый со своей базой данных PostgreSQL. Обмен сообщениями между сервисами выполняется через Apache Kafka. Все компоненты контейнеризированы и управляются через Docker Compose.
+
+## Состав системы
+
+| Сервис             | Описание                              | Технологии                       | Порт хоста | Порт контейнера |
+|--------------------|---------------------------------------|----------------------------------|------------|------------------|
+| **users-service**    | Аутентификация и управление пользователями | ASP.NET Core 10, PostgreSQL      | 7127       | 8080             |
+| **events-service**   | Управление событиями (мероприятиями)  | ASP.NET Core 10, PostgreSQL, Kafka | 7128       | 8080             |
+| **bookings-service** | Создание бронирований                | ASP.NET Core 10, PostgreSQL, Kafka | 7129       | 8080             |
+
+
+### Базы данных
+
+Каждый сервис использует отдельную базу данных PostgreSQL 16.
+
+| База данных   | Контейнер            | Порт хоста | Порт контейнера | Пользователь | Пароль   | Имя БД    |
+|---------------|----------------------|------------|------------------|--------------|----------|-----------|
+| users-db      | eventapi-users-db    | 5432       | 5432             | postgres     | postgres | users     |
+| events-db     | eventapi-events-db   | 5433       | 5432             | postgres     | postgres | events    |
+| bookings-db   | eventapi-bookings-db | 5434       | 5432             | postgres     | postgres | bookings  |
+
+> Внутри сети Docker все базы данных доступны по стандартному порту `5432`. Порты хоста (`5432`, `5433`, `5434`) используются только для подключения с хоста (например, из IDE или клиента БД).
+
+### Инфраструктура обмена сообщениями
+
+- **Zookeeper** – координатор для Kafka (порт `2181` внутри сети).
+- **Kafka** – брокер сообщений.
+  - Внутренний listener: `kafka:29092` (используется сервисами внутри Docker).
+  - Внешний listener: `localhost:9092` (для подключения с хоста).
+
+## Структура Docker-образов
+
+Каждый микросервис собирается из собственного Dockerfile, расположенного в папке `Presentation` соответствующего проекта:
+
+- `CourseProject.Users.Presentation/Dockerfile`
+- `CourseProject.Events.Presentation/Dockerfile`
+- `CourseProject.Bookings.Presentation/Dockerfile`
+
+Все Dockerfile используют многоступенчатую сборку на базе .NET 10 Alpine и включают поддержку ICU для корректной работы с локализацией.
+
+## Конфигурация сервисов
+
+Конфигурация задаётся через переменные окружения в `docker-compose.yml` и переопределяет значения из `appsettings.json`. Для запуска в Docker не требуется изменять сами файлы конфигурации.
+
+### users-service
+- **БД (внутри Docker):** `Host=eventapi-users-db;Port=5432;Database=users;Username=postgres;Password=postgres`
+- **БД (локально):** `Host=localhost;Port=5432;Database=users;Username=postgres;Password=postgres`
+- **JWT:** общий секретный ключ (см. ниже)
+- **Порты:** HTTP `8080` (снаружи `7127`)
+
+### events-service
+- **БД (внутри Docker):** `Host=eventapi-events-db;Port=5432;Database=events;Username=postgres;Password=postgres`
+- **БД (локально):** `Host=localhost;Port=5433;Database=events;Username=postgres;Password=postgres`
+- **Kafka:** `BootstrapServers=kafka:29092`, `ConsumerGroup=events-service-group`
+- **JWT:** общий секретный ключ
+- **Порты:** HTTP `8080` (снаружи `7128`)
+
+### bookings-service
+- **БД (внутри Docker):** `Host=eventapi-bookings-db;Port=5432;Database=bookings;Username=postgres;Password=postgres`
+- **БД (локально):** `Host=localhost;Port=5434;Database=bookings;Username=postgres;Password=postgres`
+- **Kafka:** `BootstrapServers=kafka:29092`, `ConsumerGroup=bookings-service-group`
+- **JWT:** общий секретный ключ
+- **Порты:** HTTP `8080` (снаружи `7129`)
+
+## Запуск системы
 
 ### Предварительные требования
-.NET 10.0 SDK
-
-Docker Desktop (для запуска интеграционных тестов)
-
+- Установленный Docker и Docker Compose.
+- .NET 10.0 SDK (для локальной разработки и тестов).
+  
 ### Инструкция
 1. Клонируйте репозиторий
     ```
@@ -16,7 +80,7 @@ Docker Desktop (для запуска интеграционных тестов)
     ```
 3. Перейдите в нужную ветку
     ```
-	git switch sprint-8
+	git switch sprint-9
     ```
 
 4. Запустите тесты
@@ -29,21 +93,20 @@ Docker Desktop (для запуска интеграционных тестов)
    ```
 6. Запустите проект
 
-HTTPS:
     ```
-	dotnet run --project CourseProject.Presentation --launch-profile https
-    ```
-
-HTTP:
-    ```
-	dotnet run --project CourseProject.Presentation --launch-profile http
+	docker compose up -d --build
     ```
 
-7. Откройте Swagger
+(Для остановки и удаления контейнеров: docker compose down)
+7. После запуска сервисы будут доступны по адресам:
 
-	HTTPS: https://localhost:7255/swagger/index.html
+Users API: http://localhost:7127
 
-	HTTP: http://localhost:5030/swagger/index.html
+Events API: http://localhost:7128
+
+Bookings API: http://localhost:7129
+
+
 
 ## Управление схемой базы данных через миграции EF Core
 
@@ -51,33 +114,30 @@ HTTP:
 
 ### Создание новой миграции
 
-Для создания новой миграции после изменения моделей выполните:
+Например, для events-service:
 	```
-	dotnet ef migrations add <MigrationName> --project CourseProject.Infrastructure/CourseProject.Infrastructure.csproj --startup-project CourseProject.Presentation/CourseProject.Presentation.csproj	```
-
-Например:
+	dotnet ef migrations add <MigrationName> --project CourseProject.Events.Infrastructure/CourseProject.Events.Infrastructure.csproj --startup-project CourseProject.Events.Presentation/CourseProject.Events.Presentation.csproj
 	```
-	dotnet ef migrations add InitialCreate --project CourseProject
-	```
+Аналогично для users и bookings.
 
 ### Применение миграций к базе данных
 
 Для применения всех непримененных миграций к базе данных выполните:
 	```
-	dotnet ef database update --project CourseProject.Infrastructure/CourseProject.Infrastructure.csproj --startup-project CourseProject.Presentation/CourseProject.Presentation.csproj
+	dotnet ef database update --project CourseProject.Events.Infrastructure/CourseProject.Events.Infrastructure.csproj --startup-project CourseProject.Events.Presentation/CourseProject.Events.Presentation.csproj
 	```
 
 ### Откат миграции
 Для отката к предыдущей миграции выполните:
 	```
-	dotnet ef database update <PreviousMigrationName> --project CourseProject.Infrastructure/CourseProject.Infrastructure.csproj --startup-project CourseProject.Presentation/CourseProject.Presentation.csproj
+	dotnet ef database update <PreviousMigrationName> --project CourseProject.Events.Infrastructure/CourseProject.Events.Infrastructure.csproj --startup-project CourseProject.Events.Presentation/CourseProject.Events.Presentation.csproj
 	```
 
 ### Удаление последней миграции
 
 Если миграция еще не была применена к базе данных:
 	```
-	dotnet ef migrations remove --project CourseProject.Infrastructure/CourseProject.Infrastructure.csproj
+	dotnet ef migrations remove --project CourseProject.Events.Infrastructure/CourseProject.Events.Infrastructure.csproj
 	```
 
 ### Роли пользователей
@@ -91,18 +151,16 @@ POST /auth/register принимает логин, пароль и необяз�
 
 POST /auth/login принимает учётные данные и возвращает JWT-токен, доступен без токена.
 
-POST /events/{id}/book, GET /bookings/{id} и DELETE /bookings/{id} требуют аутентификации; идентификатор текущего пользователя читается из claims и передается в сервис.
+POST /bookings/{id}/book, GET /bookings/{id} и DELETE /bookings/{id} требуют аутентификации; идентификатор текущего пользователя читается из claims и передается в сервис.
 
 POST /events/, PUT /events/{id}, DELETE /events/{id} доступны только администраторам; Используется атрибут [Authorize(Roles = "Admin")].
 
 Маппинг новых исключений в обработчик ошибок: нет прав → 403, событие в прошлом → 400, лимит броней → 409.
 
 ### Получение JWT-токена через Swagger
-Найдите эндпоинт POST /auth/register
-
-Нажмите на него для раскрытия
-
-Нажмите кнопку "Try it out"
+1. Регистрация пользователя
+   
+Найдите эндпоинт POST /auth/register в Swagger UI сервиса users-service (http://localhost:7127/swagger). 
 
 Введите данные пользователя:
 
@@ -129,17 +187,10 @@ POST /events/, PUT /events/{id}, DELETE /events/{id} доступны тольк
 	
 Нажмите кнопку "Execute"
 
-В ответе вы получите userId созданного пользователя
+2. Войдите в систему
 
-Шаг 3: Войдите в систему
+Найдите POST /auth/login, введите те же учётные данные:
 
-Найдите эндпоинт POST /auth/login
-
-Нажмите на него для раскрытия
-
-Нажмите кнопку "Try it out"
-
-Введите учётные данные:
 
 	{
 	  "login": "testuser",
@@ -157,7 +208,7 @@ POST /events/, PUT /events/{id}, DELETE /events/{id} доступны тольк
 	}
 
 	
-Шаг 4: Авторизуйтесь в Swagger
+3. Авторизуйтесь в Swagger
 
 Скопируйте полученный токен (без кавычек)
 
@@ -204,7 +255,11 @@ JWT-аутентификация настраивается в файле `appse
 ```
 
 ## Описание API
-### Event:
+### users-service (порт 7127)
+	POST /auth/register – регистрация пользователя.
+	
+	POST /auth/login – вход и получение JWT.
+### events-service (порт 7128)
 	GET /events — получить список событий с поддержкой фильтрации и пагинации.
 		Параметры (query):
 		Title (string, optional) — поиск по названию (частичное совпадение, без учета регистра).
@@ -218,7 +273,7 @@ JWT-аутентификация настраивается в файле `appse
 	DELETE /events/{id} — удалить событие;
 	POST /events/{id}/book – бронирование события;
 
-### Booking:
+### bookings-service (порт 7129)
 	GET /bookings/{id} – получение информации о бронировании. Возвращает:
 		200	OK
 		202	Bookings was accepted successfully
@@ -244,7 +299,8 @@ JWT-аутентификация настраивается в файле `appse
     {
         Pending = 1, //в ожидании обработки
         Confirmed = 2, //подтверждено
-        Rejected = 3 //отклонено
+        Rejected = 3, //отклонено
+        Cancelled = 4 //закрыто
     }
 ```
 
@@ -293,70 +349,52 @@ JWT-аутентификация настраивается в файле `appse
 В BookingProcessingService для проверки существования события и присвоения необходимого статуса брони.
 
 ## Описание логики фоновой обработки заявок
-	Заявки, при создании, попадают в хранилище со статусом Pending. 
-	
-	Фоновый обработчик ходит туда каждые 2 секунды и получает все заявки со статусом Pending.
-	
-	Обрабатывает их ("обращение в стороннюю систему" в течение 5 секунд, присвоение статуса Confirmed, присвоение даты и времени обработки заявки, обновление заявки в хранилище).
+1. При создании брони BookingService создает BookingCreated, отправляет в Kafkd. Это событие читает EventService
+2. При полученном событии из п.1 EventService валидирует свое событие на возможность брони (актуально ли событие, есть ли места и существует ли такое мероприятие)
+- Если это возможно, то сервис уменьшает кол-во мест и публикует событие EventSeatReserved
+- Иначе посылается EventSeatUnavailable с причиной отказа
+3. Оба события из п.2 вычитывает BookingService и, в зависимости от результата, публикует BookingConfirmed\BookingRejected.
 
 ## Пример сценария использования
-	Пользователь создает событие через POST /events;
+	Администратор создает событие через POST /events;
 
-	Создает бронь через POST /events/{id}/book и получает Location, по которому может следить за статусом своей заявки;
+	Создает бронь через POST /bookings/{id}/book и получает Location, по которому может следить за статусом своей заявки;
 
 	Пользователь сразу же запрашивает информацию о своей заявке GET /bookings/{id} и получает статус Pending;
 
 	Ожидает несколько секунд и повторяет запрос — статус изменился на Confirmed или Rejected.
 
 ## Пример сценария овербукинга
-	Пользователь создает событие через POST /events с количеством мест (TotalSeats) = 3;
+	Администратор создает событие через POST /events с количеством мест (TotalSeats) = 3;
 
-	Создает три брони через POST /events/{id}/book и получает Location для каждой, по которому может следить за статусом заявок;
+	Создает три брони через POST /bookings/{id}/book и получает Location для каждой, по которому может следить за статусом заявок;
 
-	Пользователь создает еще одну бронь через POST /events/{id}/book и получает статус 409 Conflict из-за отсутствия свободных мест.
+	Пользователь создает еще одну бронь через POST /bookings/{id}/book и получает статус 409 Conflict из-за отсутствия свободных мест.
 	
-## Архитектура CourseProject
-### CourseProject.Domain
-Независимый слой
+## Архитектура
+Каждый микросервис следует принципам чистой архитектуры и состоит из слоёв:
 
-	Entities: Доменные сущности и бизнес-модели
-	
-	Exceptions: Классы кастомных доменных исключений
+Domain – доменные сущности, бизнес-модели, исключения.
 
-### CourseProject.Application
-Зависит от Domain
+Application – сценарии использования, интерфейсы, DTO, настройка DI.
 
-	Exceptions: Классы кастомных исключений
-	
-	Extensions: Настройка DI
-	
-	Services: Реализация сценариев использования
-	
-	Models: Прикладные модели данных (DTO)
+Infrastructure – реализация репозиториев, EF Core, миграции, конфигурации таблиц.
 
-	Interfaces: Интерфейсы
+Presentation – контроллеры, маппинг, настройка DI, точка входа.
 
-### CourseProject.Infrastructure
-Зависит от Domain и Application
+Пример для events-service:
 
-	DataAccess: Логика хранения данных и конфигурации таблиц (Configurations)
-	
-	Repositories: Инфраструктурный слой (репозитории) работы с базой данных
-	
-	Migrations: Миграции Entity Framework Core для управления схемой базы данных
-	
-	Extensions: Настройка DI
+CourseProject.Events.Domain
 
-### CourseProject.Presentation
-Точка входа в приложение. Зависит от Application и инициализирует Infrastructure
+CourseProject.Events.Application
 
-	Controllers: Обработка HTTP-запросов
-	
-	Interfaces: Интерфейсы
-	
-	Services: Маппинг
-	
-	Extensions: Настройка DI
+CourseProject.Events.Infrastructure
+
+CourseProject.Events.Presentation
+
+Аналогично для users-service и bookings-service.
+
+Общий проект CourseProject.Contracts содержит контракты сообщений Kafka и используется сервисами для сериализации/десериализации событий.
 
 ## Архитектура CourseProject.Tests
 EventServiceTests.cs: тесты для сервиса EventService
