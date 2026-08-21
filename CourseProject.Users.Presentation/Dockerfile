@@ -1,32 +1,42 @@
 # See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-# Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
-# For more information, please see https://aka.ms/containercompat
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-nanoserver-ltsc2022 AS base
+# ── Stage 1: Базовый образ для работы приложения ──
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Устанавливаем ICU-библиотеки для корректной работы локализации и дат в Alpine
+RUN apk add --no-cache icu-libs
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
-# This stage is used to build the service project
-FROM mcr.microsoft.com/dotnet/sdk:10.0-nanoserver-ltsc2022 AS build
-ARG BUILD_CONFIGURATION=Release
+# ── Stage 2: Восстановление пакетов и компиляция проекта ──
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
-COPY ["CourseProject.Users.Presentation/CourseProject.Users.Presentation.csproj", "CourseProject.Users.Presentation/"]
-RUN dotnet restore "./CourseProject.Users.Presentation/CourseProject.Users.Presentation.csproj"
+
+# Копируем проекты Чистой Архитектуры для кэширования Nuget-пакетов
+COPY CourseProject.Users.Presentation/CourseProject.Users.Presentation.csproj CourseProject.Users.Presentation/
+COPY CourseProject.Users.Infrastructure/CourseProject.Users.Infrastructure.csproj CourseProject.Users.Infrastructure/
+COPY CourseProject.Users.Application/CourseProject.Users.Application.csproj CourseProject.Users.Application/
+COPY CourseProject.Users.Domain/CourseProject.Users.Domain.csproj CourseProject.Users.Domain/
+
+# Восстанавливаем зависимости с правильным синтаксисом путей
+RUN dotnet restore CourseProject.Users.Presentation/CourseProject.Users.Presentation.csproj
+
+# Копируем весь оставшийся исходный код
 COPY . .
-WORKDIR "/src/CourseProject.Users.Presentation"
-RUN dotnet build "./CourseProject.Users.Presentation.csproj" -c %BUILD_CONFIGURATION% -o /app/build
+WORKDIR /src/CourseProject.Users.Presentation
 
-# This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./CourseProject.Users.Presentation.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
+# Собираем проект
+RUN dotnet publish CourseProject.Users.Presentation.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# ── Stage 3: Публикация скомпилированных файлов ──
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
+
+# Создаем пользователя app если его нет (для Alpine)
+RUN if ! id -u app >/dev/null 2>&1; then adduser -D app; fi
+USER app
+
 ENTRYPOINT ["dotnet", "CourseProject.Users.Presentation.dll"]

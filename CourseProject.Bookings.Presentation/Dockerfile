@@ -1,32 +1,32 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
-# For more information, please see https://aka.ms/containercompat
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-nanoserver-ltsc2022 AS base
+# ── Stage 1: Базовый образ ──
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+RUN apk add --no-cache icu-libs
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
-# This stage is used to build the service project
-FROM mcr.microsoft.com/dotnet/sdk:10.0-nanoserver-ltsc2022 AS build
-ARG BUILD_CONFIGURATION=Release
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
-COPY ["CourseProject.Bookings.Presentation/CourseProject.Bookings.Presentation.csproj", "CourseProject.Bookings.Presentation/"]
-RUN dotnet restore "./CourseProject.Bookings.Presentation/CourseProject.Bookings.Presentation.csproj"
+
+COPY CourseProject.Bookings.Presentation/CourseProject.Bookings.Presentation.csproj CourseProject.Bookings.Presentation/
+COPY CourseProject.Bookings.Infrastructure/CourseProject.Bookings.Infrastructure.csproj CourseProject.Bookings.Infrastructure/
+COPY CourseProject.Bookings.Application/CourseProject.Bookings.Application.csproj CourseProject.Bookings.Application/
+COPY CourseProject.Bookings.Domain/CourseProject.Bookings.Domain.csproj CourseProject.Bookings.Domain/
+COPY CourseProject.Contracts/CourseProject.Contracts.csproj CourseProject.Contracts/
+
+RUN dotnet restore CourseProject.Bookings.Presentation/CourseProject.Bookings.Presentation.csproj
+
 COPY . .
-WORKDIR "/src/CourseProject.Bookings.Presentation"
-RUN dotnet build "./CourseProject.Bookings.Presentation.csproj" -c %BUILD_CONFIGURATION% -o /app/build
+WORKDIR /src/CourseProject.Bookings.Presentation
+RUN dotnet publish CourseProject.Bookings.Presentation.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore
 
-# This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./CourseProject.Bookings.Presentation.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
-
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
+
+RUN if ! id -u app >/dev/null 2>&1; then adduser -D app; fi
+USER app
+
 ENTRYPOINT ["dotnet", "CourseProject.Bookings.Presentation.dll"]
