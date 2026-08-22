@@ -76,7 +76,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 continue;
                             }
 
-                            Console.WriteLine($"[{consumeResult.TopicPartitionOffset}] " +
+                            _logger.LogInformation($"[{consumeResult.TopicPartitionOffset}] " +
                                           $"Key: {consumeResult.Message.Key} " +
                                           $"Value: {consumeResult.Message.Value}");
 
@@ -95,8 +95,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 {
                                     _logger.LogWarning("BookingId={BookingId} не найдено. Пропуск сообщения.", eventSeatsReserved.BookingId);
 
-                                    await bookingRejectedProducer.PublishBookingRejected(eventSeatsReserved.BookingId, eventSeatsReserved.EventId, eventSeatsReserved.UserId); 
-                                    Console.WriteLine("booking doesn't exist");
+                                    await bookingRejectedProducer.PublishBookingRejected(eventSeatsReserved.BookingId, eventSeatsReserved.EventId, eventSeatsReserved.UserId);
                                     FinalizeMessageProcessing(consumer, consumeResult);
                                     continue;
 
@@ -105,8 +104,8 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 booking.Confirm();
                                 await bookingRepository.UpdateAsync(booking);
 
-                                await bookingConfirmedProducer.PublishBookingConfirmed(eventSeatsReserved.BookingId, eventSeatsReserved.EventId, eventSeatsReserved.UserId); 
-                                Console.WriteLine("booking confirmed");
+                                await bookingConfirmedProducer.PublishBookingConfirmed(eventSeatsReserved.BookingId, eventSeatsReserved.EventId, eventSeatsReserved.UserId);
+                                _logger.LogInformation("booking confirmed");
                             }
                         }
                         else if (consumeResult.Topic == EventSeatsUnavailable.TopicName)
@@ -119,7 +118,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 continue;
                             }
 
-                            Console.WriteLine($"[{consumeResult.TopicPartitionOffset}] " +
+                            _logger.LogInformation($"[{consumeResult.TopicPartitionOffset}] " +
                                           $"Key: {consumeResult.Message.Key} " +
                                           $"Value: {consumeResult.Message.Value}");
 
@@ -138,7 +137,6 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                     _logger.LogWarning("BookingId={BookingId} не найдено. Пропуск сообщения.", eventSeatsUnavailable.BookingId);
 
                                     await bookingRejectedProducer.PublishBookingRejected(eventSeatsUnavailable.BookingId, eventSeatsUnavailable.EventId, eventSeatsUnavailable.UserId); 
-                                    Console.WriteLine("booking doesn't exist");
                                     FinalizeMessageProcessing(consumer, consumeResult);
                                     continue;
 
@@ -147,8 +145,8 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 booking.Reject();
                                 await bookingRepository.UpdateAsync(booking);
 
-                                await bookingRejectedProducer.PublishBookingRejected(eventSeatsUnavailable.BookingId, eventSeatsUnavailable.EventId, eventSeatsUnavailable.UserId); 
-                                Console.WriteLine("booking rejected");
+                                await bookingRejectedProducer.PublishBookingRejected(eventSeatsUnavailable.BookingId, eventSeatsUnavailable.EventId, eventSeatsUnavailable.UserId);
+                                _logger.LogWarning("booking rejected");
                             }
                         }
                         FinalizeMessageProcessing(consumer, consumeResult);
@@ -169,8 +167,6 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
             catch (OperationCanceledException)
             {
                 _logger.LogInformation("Consumer остановлен штатно.");
-
-                Console.WriteLine($"Consumer остановлен штатно");
             }
             finally
             {

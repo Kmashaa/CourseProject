@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using CourseProject.Contracts;
 using CourseProject.Events.Application.Interfaces;
+using CourseProject.Events.Infrastructure.Messaging.Producers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -74,7 +75,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             continue;
                         }
 
-                        Console.WriteLine($"[{consumeResult.TopicPartitionOffset}] " +
+                        _logger.LogInformation($"[{consumeResult.TopicPartitionOffset}] " +
                                       $"Key: {consumeResult.Message.Key} " +
                                       $"Value: {consumeResult.Message.Value}");
 
@@ -83,31 +84,29 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             stoppingToken.ThrowIfCancellationRequested();
                             var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
 
+                            var eventSeatsReleasedProducer = scope.ServiceProvider.GetRequiredService<IEventSeatsReleasedProducer>();
+
+
                             var @event = await eventRepository.GetByIdAsync(bookingCancelled.EventId);
 
                             if (@event == null)
                             {
                                 _logger.LogWarning("Событие EventId={EventId} не найдено для BookingId={BookingId}. Пропуск сообщения.", bookingCancelled.EventId, bookingCancelled.BookingId);
-
-                                Console.WriteLine("event doesn't exist");
-
                             }
                             else if (@event.StartAt <= DateTime.Now)
                             {
                                 _logger.LogWarning("Событие EventId={EventId} уже началось. Резервация невозможна.", @event.Id);
-
-                                Console.WriteLine("event has already started");
                             }
                             else if (@event.ReleaseSeats())
                             {
                                 await eventRepository.UpdateAsync(@event);
-                                Console.WriteLine("Seats: " + @event.AvailableSeats);
+                                await eventSeatsReleasedProducer.PublishEventSeatsReleased(bookingCancelled.BookingId, bookingCancelled.EventId, bookingCancelled.UserId, stoppingToken);
+
+                                _logger.LogInformation("Seats: " + @event.AvailableSeats);
                             }
                             else
                             {
                                 _logger.LogWarning("Невозможно освободить места на событие EventId={EventId}.", @event.Id);
-
-                                Console.WriteLine("impossible release seats");
                             }
                         }
                         FinalizeMessageProcessing(consumer, consumeResult);
@@ -129,8 +128,6 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
             catch (OperationCanceledException)
             {
                 _logger.LogInformation("Consumer остановлен штатно.");
-
-                Console.WriteLine($"Consumer остановлен штатно");
             }
             finally
             {

@@ -58,6 +58,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer("JwtBearerScheme", options =>
 {
+    options.MapInboundClaims = false;
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -69,7 +71,7 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
 
-        RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+        RoleClaimType = "role",
 
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(

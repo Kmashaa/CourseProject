@@ -1,21 +1,29 @@
 ﻿using CourseProject.Users.Application.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
+using BCrypt.Net;
 
 namespace CourseProject.Users.Infrastructure.Security
 {
     public class PasswordHasher : IPasswordHasher
     {
+        private const int WorkFactor = 17;
+
         public string Hash(string password)
         {
-            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-            return Convert.ToHexString(bytes);
+            return BCrypt.Net.BCrypt.HashPassword(password, WorkFactor);
         }
 
         public bool Verify(string password, string passwordHash)
         {
-            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-            return Convert.ToHexString(bytes) == passwordHash;
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(password, passwordHash);
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                return false;
+            }
         }
     }
 }

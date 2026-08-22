@@ -74,7 +74,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             continue;
                         }
 
-                        Console.WriteLine($"[{consumeResult.TopicPartitionOffset}] " +
+                        _logger.LogInformation($"[{consumeResult.TopicPartitionOffset}] " +
                                       $"Key: {consumeResult.Message.Key} " +
                                       $"Value: {consumeResult.Message.Value}");
 
@@ -93,28 +93,24 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                                 _logger.LogWarning("Событие EventId={EventId} не найдено для BookingId={BookingId}. Пропуск сообщения.", bookingCreated.EventId, bookingCreated.BookingId);
 
                                 await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "event doesn't exist", stoppingToken); 
-                                Console.WriteLine("event doesn't exist");
-
                             }
                             else if (@event.StartAt <= DateTime.Now)
                             {
                                 _logger.LogWarning("Событие EventId={EventId} уже началось. Резервация невозможна.", @event.Id);
 
                                 await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "event has already started", stoppingToken); 
-                                Console.WriteLine("event has already started");
                             }
                             else if (@event.TryReserveSeats())
                             {
                                 await eventRepository.UpdateAsync(@event);
-                                await eventSeatsReservedProducer.PublishEventSeatsReserved(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, stoppingToken); 
-                                Console.WriteLine("Seats: " + @event.AvailableSeats);
+                                await eventSeatsReservedProducer.PublishEventSeatsReserved(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, stoppingToken);
+                                _logger.LogInformation("Seats: " + @event.AvailableSeats);
                             }
                             else
                             {
                                 _logger.LogWarning("Нет свободных мест на событие EventId={EventId}.", @event.Id);
 
                                 await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "no available seats", stoppingToken); 
-                                Console.WriteLine("no available seats");
                             }
                         }
                         FinalizeMessageProcessing(consumer, consumeResult);
@@ -136,8 +132,6 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
             catch (OperationCanceledException)
             {
                 _logger.LogInformation("Consumer остановлен штатно.");
-
-                Console.WriteLine($"Consumer остановлен штатно");
             }
             finally
             {

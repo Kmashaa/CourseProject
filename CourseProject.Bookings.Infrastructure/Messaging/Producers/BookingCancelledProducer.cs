@@ -1,7 +1,9 @@
 ﻿using Confluent.Kafka;
 using CourseProject.Bookings.Application.Interfaces;
+using CourseProject.Bookings.Infrastructure.Messaging.Consumers;
 using CourseProject.Contracts;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace CourseProject.Bookings.Infrastructure.Messaging.Producers
@@ -9,8 +11,10 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Producers
     public class BookingCancelledProducer : IBookingCancelledProducer, IDisposable
     {
         private readonly IProducer<string, string> _producer;
+        private readonly ILogger<BookingCancelledProducer> _logger;
 
-        public BookingCancelledProducer(IConfiguration configuration)
+
+        public BookingCancelledProducer(IConfiguration configuration, ILogger<BookingCancelledProducer> logger)
         {
             var config = new ProducerConfig
             {
@@ -19,7 +23,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Producers
             };
 
             _producer = new ProducerBuilder<string, string>(config).Build();
-
+            _logger = logger;
         }
 
         public async Task PublishBookingCancelled(Guid bookingId, Guid eventId, Guid userId, int numOfSeats = 1, CancellationToken ct = default)
@@ -40,7 +44,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Producers
             },
             ct);
 
-            Console.WriteLine($"Доставлено: {result.TopicPartitionOffset}");
+            _logger.LogInformation($"Доставлено: {result.TopicPartitionOffset}");
         }
         public void Dispose()
         {

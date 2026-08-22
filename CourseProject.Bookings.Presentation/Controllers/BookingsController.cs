@@ -34,8 +34,8 @@ namespace CourseProject.Bookings.Presentation.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            var userRoleClaim = User.FindFirst(ClaimTypes.Role);
+            var userIdClaim = User.FindFirst("sub");
+            var userRoleClaim = User.FindFirst("role");
 
 
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId) && userRoleClaim != null)
@@ -71,8 +71,8 @@ namespace CourseProject.Bookings.Presentation.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            var userRoleClaim = User.FindFirst(ClaimTypes.Role);
+            var userIdClaim = User.FindFirst("sub");
+            var userRoleClaim = User.FindFirst("role");
 
 
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId) && userRoleClaim != null)
@@ -104,7 +104,7 @@ namespace CourseProject.Bookings.Presentation.Controllers
         [HttpPost("{eventId}/book")]
         public async Task<IActionResult> BookEvent(Guid eventId)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            var userIdClaim = User.FindFirst("sub");
 
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
             {

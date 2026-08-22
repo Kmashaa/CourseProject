@@ -21,12 +21,6 @@ namespace CourseProject.Events.Application.Services
             _paginatedResultDtoMapperService = paginatedResultDtoMapperService;
         }
 
-        public async Task<List<EventDto>?> GetAllEventsAsync()
-        {
-            var events = await _eventRepository.GetAllAsync();
-            return events.Select(o => _eventDtoMapperService.EntityToDto(o)).ToList();
-        }
-
         public async Task<PaginatedResultDto> GetEventsAsync(EventFilterDto filter)
         {
             var filteredEvents = await _eventRepository.GetEventsWithFilterAsync(_eventFilterDtoMapperService.DtoToEntity(filter));

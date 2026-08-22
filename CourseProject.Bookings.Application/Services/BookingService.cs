@@ -76,10 +76,6 @@ namespace CourseProject.Bookings.Application.Services
 
             Enum.TryParse<UserRoles>(role, ignoreCase: true, out UserRoles userRole);
 
-            Console.WriteLine(role + "  " + userRole.ToString());
-            _logger.LogInformation(role + "  " + userRole.ToString());
-
-
             if (!(userRole == UserRoles.Admin || booking.UserId == userId))
             {
                 throw new NoPermissionException(userId);

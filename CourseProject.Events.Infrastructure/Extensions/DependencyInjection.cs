@@ -27,6 +27,7 @@ namespace CourseProject.Events.Infrastructure.Extensions
 
 
             services.AddSingleton<IEventSeatsReservedProducer, EventSeatsReservedProducer>();
+            services.AddSingleton<IEventSeatsReleasedProducer, EventSeatsReleasedProducer>();
             services.AddSingleton<IEventSeatsUnavailableProducer, EventSeatsUnavailableProducer>();
 
             return services;

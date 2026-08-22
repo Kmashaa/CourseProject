@@ -4,9 +4,9 @@ using System.Text;
 
 namespace CourseProject.Events.Application.Interfaces
 {
-    public interface IEventSeatsReservedProducer
+    public interface IEventSeatsReleasedProducer
     {
-        Task PublishEventSeatsReserved(Guid bookingId, Guid eventId, Guid userId, CancellationToken ct = default);
+        Task PublishEventSeatsReleased(Guid bookingId, Guid eventId, Guid userId, CancellationToken ct = default);
 
     }
 }

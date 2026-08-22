@@ -3,16 +3,19 @@ using Confluent.Kafka.Admin;
 using CourseProject.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace CourseProject.Events.Infrastructure.Messaging.Consumers
 {
     public class KafkaTopicInitializer : IHostedService
     {
         private readonly IConfiguration _configuration;
-        public KafkaTopicInitializer(
-            IConfiguration configuration)
+        private readonly ILogger<KafkaTopicInitializer> _logger;
+
+        public KafkaTopicInitializer(IConfiguration configuration, ILogger<KafkaTopicInitializer> logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -21,7 +24,10 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
             var topicsToCreate = new List<string>
             {
                 BookingCreated.TopicName,
-                BookingCancelled.TopicName
+                BookingCancelled.TopicName,
+                BookingRejected.TopicName,
+                BookingConfirmed.TopicName
+
             };
 
 
@@ -46,16 +52,16 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                 {
                     if (ex.Results[0].Error.Code == ErrorCode.TopicAlreadyExists)
                     {
-                        Console.WriteLine($"Топик '{topicName}' уже существует. Пропускаем создание.");
+                        _logger.LogWarning($"Топик '{topicName}' уже существует. Пропускаем создание.");
                     }
                     else
                     {
-                        Console.WriteLine($"Не удалось создать топик '{topicName}' из-за ошибки Kafka, но запуск продолжается.");
+                        _logger.LogWarning($"Не удалось создать топик '{topicName}' из-за ошибки Kafka, но запуск продолжается.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Непредвиденная ошибка при инициализации топика '{topicName}'. Запуск продолжается.");
+                    _logger.LogError($"Непредвиденная ошибка при инициализации топика '{topicName}'. Запуск продолжается.");
                 }
             }
         }
