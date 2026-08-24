@@ -1,11 +1,12 @@
-﻿using CourseProject.Events.Infrastructure.Messaging.Producers;
-using CourseProject.Events.Application.Interfaces;
+﻿using CourseProject.Events.Application.Interfaces;
 using CourseProject.Events.Infrastructure.DataAccess;
 using CourseProject.Events.Infrastructure.Messaging.Consumers;
+using CourseProject.Events.Infrastructure.Messaging.Producers;
 using CourseProject.Events.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace CourseProject.Events.Infrastructure.Extensions
 {
@@ -30,6 +31,10 @@ namespace CourseProject.Events.Infrastructure.Extensions
             services.AddSingleton<IEventSeatsReleasedProducer, EventSeatsReleasedProducer>();
             services.AddSingleton<IEventSeatsUnavailableProducer, EventSeatsUnavailableProducer>();
 
+            var redisConnectionString = configuration.GetConnectionString("RedisConnection");
+            services.AddSingleton<IConnectionMultiplexer>(
+                ConnectionMultiplexer.Connect("localhost:6379")
+            );
             return services;
         }
     }
