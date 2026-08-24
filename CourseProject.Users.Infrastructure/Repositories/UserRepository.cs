@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CourseProject.Users.Infrastructure.Repositories
 {
-    public class UserRepository: IUserRepository
+    public class UserRepository : IUserRepository
     {
         private readonly AppDbContext _context;
 
@@ -36,7 +36,7 @@ namespace CourseProject.Users.Infrastructure.Repositories
                 await _context.Users.AddAsync(user);
                 await _context.SaveChangesAsync();
                 return user;
-            } 
+            }
             catch (DbUpdateException ex)
             {
                 throw new InvalidUsersData();

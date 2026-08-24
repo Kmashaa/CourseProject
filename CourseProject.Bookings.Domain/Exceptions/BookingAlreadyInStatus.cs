@@ -17,7 +17,7 @@ namespace CourseProject.Bookings.Domain.Exceptions
             Booking = booking;
         }
 
-     
+
 
         public BookingAlreadyInStatus(Booking booking, string message) : base(message)
         {

@@ -32,8 +32,8 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
             return Task.Factory.StartNew(
                 () => Consume(stoppingToken),
                 stoppingToken,
-                TaskCreationOptions.LongRunning, 
-                TaskScheduler.Default).Unwrap(); 
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default).Unwrap();
         }
 
         private async Task Consume(CancellationToken stoppingToken)
@@ -92,13 +92,13 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             {
                                 _logger.LogWarning("Событие EventId={EventId} не найдено для BookingId={BookingId}. Пропуск сообщения.", bookingCreated.EventId, bookingCreated.BookingId);
 
-                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "event doesn't exist", stoppingToken); 
+                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "event doesn't exist", stoppingToken);
                             }
                             else if (@event.StartAt <= DateTime.Now)
                             {
                                 _logger.LogWarning("Событие EventId={EventId} уже началось. Резервация невозможна.", @event.Id);
 
-                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "event has already started", stoppingToken); 
+                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "event has already started", stoppingToken);
                             }
                             else if (@event.TryReserveSeats())
                             {
@@ -110,7 +110,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             {
                                 _logger.LogWarning("Нет свободных мест на событие EventId={EventId}.", @event.Id);
 
-                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "no available seats", stoppingToken); 
+                                await eventSeatsUnavailableProducer.PublishEventSeatsUnavailable(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, "no available seats", stoppingToken);
                             }
                         }
                         FinalizeMessageProcessing(consumer, consumeResult);

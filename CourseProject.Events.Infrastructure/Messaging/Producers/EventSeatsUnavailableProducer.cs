@@ -2,6 +2,7 @@
 using CourseProject.Contracts;
 using CourseProject.Events.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace CourseProject.Events.Infrastructure.Messaging.Producers
@@ -9,8 +10,10 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
     public class EventSeatsUnavailableProducer : IEventSeatsUnavailableProducer, IDisposable
     {
         private readonly IProducer<string, string> _producer;
+        private readonly ILogger<EventSeatsUnavailableProducer> _logger;
 
-        public EventSeatsUnavailableProducer(IConfiguration configuration)
+
+        public EventSeatsUnavailableProducer(IConfiguration configuration, ILogger<EventSeatsUnavailableProducer> logger)
         {
             var config = new ProducerConfig
             {
@@ -19,7 +22,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
             };
 
             _producer = new ProducerBuilder<string, string>(config).Build();
-
+            _logger = logger;
         }
 
         public async Task PublishEventSeatsUnavailable(Guid bookingId, Guid eventId, Guid userId, string? reason, CancellationToken ct = default)
@@ -33,14 +36,14 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
                 CreatedAt = DateTime.UtcNow
             };
 
-        var result = await _producer.ProduceAsync(EventSeatsUnavailable.TopicName, new Message<string, string>
-        {
-            Key = eventId.ToString(),
-            Value = JsonSerializer.Serialize(bookingCreated)
-        },
-        ct);
+            var result = await _producer.ProduceAsync(EventSeatsUnavailable.TopicName, new Message<string, string>
+            {
+                Key = eventId.ToString(),
+                Value = JsonSerializer.Serialize(bookingCreated)
+            },
+            ct);
 
-        Console.WriteLine($"Доставлено: {result.TopicPartitionOffset}");
+            _logger.LogInformation($"Доставлено: {result.TopicPartitionOffset}");
         }
         public void Dispose()
         {

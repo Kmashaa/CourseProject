@@ -10,7 +10,7 @@ public record BookingCancelled
 
     public Guid UserId { get; init; }
 
-    public int NumOfSeats {  get; init; }
+    public int NumOfSeats { get; init; }
 
     public DateTime CreatedAt { get; init; }
 }

@@ -32,7 +32,7 @@ namespace CourseProject.Bookings.Infrastructure.Repositories
             await _context.Bookings.AddAsync(booking);
             await _context.SaveChangesAsync();
             return booking;
-            
+
 
         }
 

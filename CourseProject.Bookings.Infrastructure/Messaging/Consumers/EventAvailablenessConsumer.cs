@@ -33,8 +33,8 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
             return Task.Factory.StartNew(
                 () => Consume(stoppingToken),
                 stoppingToken,
-                TaskCreationOptions.LongRunning, 
-                TaskScheduler.Default).Unwrap(); 
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default).Unwrap();
         }
 
         private async Task Consume(CancellationToken stoppingToken)
@@ -136,7 +136,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 {
                                     _logger.LogWarning("BookingId={BookingId} не найдено. Пропуск сообщения.", eventSeatsUnavailable.BookingId);
 
-                                    await bookingRejectedProducer.PublishBookingRejected(eventSeatsUnavailable.BookingId, eventSeatsUnavailable.EventId, eventSeatsUnavailable.UserId); 
+                                    await bookingRejectedProducer.PublishBookingRejected(eventSeatsUnavailable.BookingId, eventSeatsUnavailable.EventId, eventSeatsUnavailable.UserId);
                                     FinalizeMessageProcessing(consumer, consumeResult);
                                     continue;
 

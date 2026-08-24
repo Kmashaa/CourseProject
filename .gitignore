@@ -99,3 +99,6 @@
 /CourseProject.Users.Presentation/obj
 /CourseProject.Contracts/bin/Debug/net10.0
 /CourseProject.Contracts/obj
+/CourseProject.Bookings.Presentation/CourseProject.Bookings.Presentation.csproj.user
+/CourseProject.Events.Presentation/CourseProject.Events.Presentation.csproj.user
+/CourseProject.Users.Presentation/CourseProject.Users.Presentation.csproj.user

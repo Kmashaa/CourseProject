@@ -8,7 +8,7 @@ namespace CourseProject.Bookings.Presentation.Extensions
         public static IServiceCollection AddPresentation(this IServiceCollection services)
         {
             services.AddSingleton<IBookingModelDtoMapperService, BookingModelDtoMapperService>();
-            
+
             return services;
 
         }

@@ -2,7 +2,7 @@
 
 namespace CourseProject.Bookings.Domain.Exceptions
 {
-    public class BookingNotFoundException: Exception
+    public class BookingNotFoundException : Exception
     {
         public Booking? Booking { get; }
 

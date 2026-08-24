@@ -44,8 +44,6 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
             ct);
 
             _logger.LogInformation($"Доставлено: {result.TopicPartitionOffset}");
-            Console.WriteLine($"Доставлено: {result.TopicPartitionOffset}");
-
         }
         public void Dispose()
         {

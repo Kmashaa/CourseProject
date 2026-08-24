@@ -5,7 +5,7 @@ using CourseProject.Events.Application.Models;
 
 namespace CourseProject.Events.Application.Services
 {
-    public class PaginatedResultDtoMapperService: IPaginatedResultDtoMapperService
+    public class PaginatedResultDtoMapperService : IPaginatedResultDtoMapperService
     {
         private readonly IEventDtoMapperService _eventDtoMapperService;
         public PaginatedResultDtoMapperService(IEventDtoMapperService eventDtoMapperService)
@@ -18,7 +18,7 @@ namespace CourseProject.Events.Application.Services
             PaginatedResult paginatedResult = new()
             {
                 TotalItems = paginatedResultDto.TotalItems,
-                Events = paginatedResultDto.EventsDto.Select(o=> _eventDtoMapperService.DtoToEntity(o)).ToList(),
+                Events = paginatedResultDto.EventsDto.Select(o => _eventDtoMapperService.DtoToEntity(o)).ToList(),
                 CurrentPage = paginatedResultDto.CurrentPage,
                 NumOfItemsOnCurrentPage = paginatedResultDto.NumOfItemsOnCurrentPage
             };

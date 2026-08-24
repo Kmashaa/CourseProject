@@ -41,7 +41,6 @@ namespace CourseProject.Bookings.Presentation.Controllers
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId) && userRoleClaim != null)
             {
                 string userRole = userRoleClaim.Value;
-                Console.WriteLine(userRole);
 
                 var bookingDto = await _bookingService.GetBookingByIdAsync(id, userId, userRole);
 

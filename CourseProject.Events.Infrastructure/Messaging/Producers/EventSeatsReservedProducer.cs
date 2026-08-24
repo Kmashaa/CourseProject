@@ -1,7 +1,8 @@
 ﻿using Confluent.Kafka;
-using CourseProject.Events.Application.Interfaces;
 using CourseProject.Contracts;
+using CourseProject.Events.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace CourseProject.Events.Infrastructure.Messaging.Producers
@@ -9,8 +10,10 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
     public class EventSeatsReservedProducer : IEventSeatsReservedProducer, IDisposable
     {
         private readonly IProducer<string, string> _producer;
+        private readonly ILogger<EventSeatsReservedProducer> _logger;
 
-        public EventSeatsReservedProducer(IConfiguration configuration)
+
+        public EventSeatsReservedProducer(IConfiguration configuration, ILogger<EventSeatsReservedProducer> logger)
         {
             var config = new ProducerConfig
             {
@@ -19,6 +22,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
             };
 
             _producer = new ProducerBuilder<string, string>(config).Build();
+            _logger = logger;
 
         }
 
@@ -39,7 +43,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Producers
             },
             ct);
 
-            Console.WriteLine($"Доставлено: {result.TopicPartitionOffset}");
+            _logger.LogInformation($"Доставлено: {result.TopicPartitionOffset}");
         }
         public void Dispose()
         {

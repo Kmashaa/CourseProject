@@ -9,7 +9,7 @@ using System.Text;
 
 namespace CourseProject.Users.Infrastructure.Security
 {
-    public class JwtTokenGenerator: IJwtTokenGenerator
+    public class JwtTokenGenerator : IJwtTokenGenerator
     {
         private readonly JwtOptions _jwtOptions;
 

@@ -14,7 +14,7 @@
 
 //namespace CourseProject.Tests
 //{
-    
+
 
 //    public class BookingServiceTests : IDisposable
 //    {
@@ -308,7 +308,7 @@
 //                .Setup(provider => provider.GetService(typeof(IEventRepository)))
 //                .Returns(eventRepositoryMock.Object);
 
-           
+
 //            bookingRepositoryMock
 //                .Setup(repo => repo.GetPendingsAsync())
 //                .ReturnsAsync(new List<Guid> { targetBookingId });

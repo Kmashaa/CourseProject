@@ -33,8 +33,8 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
             return Task.Factory.StartNew(
                 () => Consume(stoppingToken),
                 stoppingToken,
-                TaskCreationOptions.LongRunning, 
-                TaskScheduler.Default).Unwrap(); 
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default).Unwrap();
         }
 
         private async Task Consume(CancellationToken stoppingToken)
