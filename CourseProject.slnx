@@ -1,8 +1,23 @@
 <Solution>
-  <Project Path="CourseProject.Application/CourseProject.Application.csproj" Id="694b9652-d460-4056-b4d2-d96a112f6f8c" />
-  <Project Path="CourseProject.Domain/CourseProject.Domain.csproj" Id="855a613f-0599-4360-8bce-a1691fec2e6d" />
-  <Project Path="CourseProject.Infrastructure/CourseProject.Infrastructure.csproj" Id="42e3a001-6b25-4db1-bec6-329de8b3a060" />
+  <Folder Name="/Bookings/">
+    <Project Path="CourseProject.Bookings.Application/CourseProject.Bookings.Application.csproj" />
+    <Project Path="CourseProject.Bookings.Domain/CourseProject.Bookings.Domain.csproj" />
+    <Project Path="CourseProject.Bookings.Infrastructure/CourseProject.Bookings.Infrastructure.csproj" />
+    <Project Path="CourseProject.Bookings.Presentation/CourseProject.Bookings.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/Events/">
+    <Project Path="CourseProject.Events.Application/CourseProject.Events.Application.csproj" />
+    <Project Path="CourseProject.Events.Domain/CourseProject.Events.Domain.csproj" />
+    <Project Path="CourseProject.Events.Infrastructure/CourseProject.Events.Infrastructure.csproj" />
+    <Project Path="CourseProject.Events.Presentation/CourseProject.Events.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/Users/">
+    <Project Path="CourseProject.Users.Application/CourseProject.Users.Application.csproj" />
+    <Project Path="CourseProject.Users.Domain/CourseProject.Users.Domain.csproj" />
+    <Project Path="CourseProject.Users.Infrastructure/CourseProject.Users.Infrastructure.csproj" />
+    <Project Path="CourseProject.Users.Presentation/CourseProject.Users.Presentation.csproj" />
+  </Folder>
+  <Project Path="CourseProject.Contracts/CourseProject.Contracts.csproj" Id="ef19d23b-b409-48ce-a6c2-75d7eb197621" />
   <Project Path="CourseProject.IntegrationTests/CourseProject.IntegrationTests.csproj" Id="6ad58b45-56fe-456a-8613-2c4fb4f51cde" />
-  <Project Path="CourseProject.Presentation/CourseProject.Presentation.csproj" />
   <Project Path="CourseProject.Tests/CourseProject.Tests.csproj" Id="4714ae0e-725c-43de-8493-2183ff64f9bd" />
 </Solution>
