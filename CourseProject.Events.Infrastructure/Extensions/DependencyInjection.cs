@@ -1,4 +1,5 @@
 ﻿using CourseProject.Events.Application.Interfaces;
+using CourseProject.Events.Infrastructure.Cache;
 using CourseProject.Events.Infrastructure.DataAccess;
 using CourseProject.Events.Infrastructure.Messaging.Consumers;
 using CourseProject.Events.Infrastructure.Messaging.Producers;
@@ -32,9 +33,21 @@ namespace CourseProject.Events.Infrastructure.Extensions
             services.AddSingleton<IEventSeatsUnavailableProducer, EventSeatsUnavailableProducer>();
 
             var redisConnectionString = configuration.GetConnectionString("RedisConnection");
+            var options = new ConfigurationOptions
+            {
+                EndPoints = { redisConnectionString },
+                ConnectTimeout = 5000,
+                SyncTimeout = 3000,
+                AbortOnConnectFail = false,
+                ConnectRetry = 3,
+            };
+
             services.AddSingleton<IConnectionMultiplexer>(
-                ConnectionMultiplexer.Connect("localhost:6379")
+                ConnectionMultiplexer.Connect(options)
             );
+
+            services.AddScoped<ICacheService, CacheService>();
+
             return services;
         }
     }
