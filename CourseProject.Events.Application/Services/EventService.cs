@@ -78,7 +78,11 @@ namespace CourseProject.Events.Application.Services
             ValidateEvent(@event);
             @event.AvailableSeats = @event.TotalSeats;
             @event.Id = Guid.NewGuid();
-            await _eventRepository.CreateAsync(_eventDtoMapperService.DtoToEntity(@event));
+
+            var entityEvent = _eventDtoMapperService.DtoToEntity(@event);
+            await _eventRepository.CreateAsync(entityEvent);
+            await _cache.SetById(@event.Id, entityEvent);
+
             return @event;
         }
 
@@ -112,6 +116,8 @@ namespace CourseProject.Events.Application.Services
 
             await _eventRepository.UpdateAsync(currentDbEvent);
 
+            await _cache.SetById(currentDbEvent.Id, currentDbEvent);
+
             return @event;
         }
 
@@ -121,7 +127,11 @@ namespace CourseProject.Events.Application.Services
             {
                 throw new InvalidEventDataException();
             }
-            return await _eventRepository.DeleteAsync((Guid)id);
+
+            var deleted = await _eventRepository.DeleteAsync((Guid)id);
+            await _cache.DeleteById((Guid)id);
+
+            return deleted;
         }
 
 

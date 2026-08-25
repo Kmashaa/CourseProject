@@ -83,6 +83,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                         {
                             stoppingToken.ThrowIfCancellationRequested();
                             var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+                            var cache = scope.ServiceProvider.GetRequiredService<ICacheService>();
 
                             var eventSeatsReleasedProducer = scope.ServiceProvider.GetRequiredService<IEventSeatsReleasedProducer>();
 
@@ -101,6 +102,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             {
                                 await eventRepository.UpdateAsync(@event);
                                 await eventSeatsReleasedProducer.PublishEventSeatsReleased(bookingCancelled.BookingId, bookingCancelled.EventId, bookingCancelled.UserId, stoppingToken);
+                                await cache.SetById(@event.Id, @event);
 
                                 _logger.LogInformation("Seats: " + @event.AvailableSeats);
                             }

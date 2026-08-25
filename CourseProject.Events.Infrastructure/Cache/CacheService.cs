@@ -49,7 +49,7 @@ namespace CourseProject.Events.Infrastructure.Cache
             var keyForRequest = $"{key}{id}";
             try
             {
-                await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<Event>(@event), TimeSpan.FromMinutes(15));
+                await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<Event>(@event), TimeSpan.FromMinutes(3));
                 _logger.LogInformation($"set {keyForRequest}");
                 return @event;
             }
