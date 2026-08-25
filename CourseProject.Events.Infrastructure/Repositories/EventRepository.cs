@@ -1,7 +1,7 @@
-﻿using CourseProject.Events.Domain.Entities;
-using CourseProject.Events.Application.Interfaces;
-using Microsoft.EntityFrameworkCore;
+﻿using CourseProject.Events.Application.Interfaces;
+using CourseProject.Events.Domain.Entities;
 using CourseProject.Events.Infrastructure.DataAccess;
+using Microsoft.EntityFrameworkCore;
 
 namespace CourseProject.Events.Infrastructure.Repositories
 {
@@ -92,6 +92,29 @@ namespace CourseProject.Events.Infrastructure.Repositories
                 Events = paginatedEvents,
                 NumOfItemsOnCurrentPage = paginatedEvents.Count
             };
+        }
+
+        public async Task<List<TopEvent>> GetTopEventsAsync(int number)
+        {
+            var topEvents = await _context.Events
+                .Where(e => e.TotalSeats > 0) 
+                .Select(e => new TopEvent
+                {
+                    Id = e.Id,
+                    Title = e.Title,
+                    Description = e.Description,
+                    TotalSeats = e.TotalSeats,
+                    AvailableSeats = e.AvailableSeats,
+                    StartAt = e.StartAt,
+                    EndAt = e.EndAt,
+                    SalesPercentage = Math.Round((decimal)(e.TotalSeats - e.AvailableSeats) / e.TotalSeats * 100, 2)
+                })
+                .OrderByDescending(e => e.SalesPercentage) 
+                .ThenByDescending(e => e.TotalSeats) 
+                .Take(number)
+                .ToListAsync();
+
+            return topEvents;
         }
 
     }

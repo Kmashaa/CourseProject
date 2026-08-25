@@ -13,5 +13,10 @@ namespace CourseProject.Events.Application.Interfaces
         Task<Event?> SetById(Guid id, Event @event);
 
         Task DeleteById(Guid id);
+
+        Task<List<TopEvent>?> GetTop(int number);
+
+        Task<List<TopEvent>?> SetTop(int number, List<TopEvent> events);
+
     }
 }

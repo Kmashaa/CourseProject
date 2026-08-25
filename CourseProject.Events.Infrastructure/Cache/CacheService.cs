@@ -29,7 +29,11 @@ namespace CourseProject.Events.Infrastructure.Cache
 
                 if (cached.HasValue)
                 {
-                    return JsonSerializer.Deserialize<Event>(cached.ToString());
+                    var events = JsonSerializer.Deserialize<Event>(cached.ToString());
+
+                    _logger.LogInformation($"return {keyForRequest}");
+
+                    return events;
                 }
                 return null;
             }
@@ -42,9 +46,11 @@ namespace CourseProject.Events.Infrastructure.Cache
 
         public async Task<Event?> SetById(Guid id, Event @event)
         {
+            var keyForRequest = $"{key}{id}";
             try
             {
-                await _db.StringSetAsync($"{key}{id}", JsonSerializer.Serialize<Event>(@event), TimeSpan.FromMinutes(15));
+                await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<Event>(@event), TimeSpan.FromMinutes(15));
+                _logger.LogInformation($"set {keyForRequest}");
                 return @event;
             }
             catch (Exception ex)
@@ -56,14 +62,62 @@ namespace CourseProject.Events.Infrastructure.Cache
 
         public async Task DeleteById(Guid id)
         {
+            var keyForRequest = $"{key}{id}";
+
             try
             {
-                await _db.KeyDeleteAsync($"{key}{id}");
+                await _db.KeyDeleteAsync(keyForRequest);
+                _logger.LogInformation($"delete {keyForRequest}");
+
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex.ToString());
             }
+        }
+
+        public async Task<List<TopEvent>?> GetTop(int number)
+        {
+            try
+            {
+                var keyForRequest = $"{key}top{number}";
+
+                RedisValue cached = await _db.StringGetAsync(keyForRequest);
+
+                if (cached.HasValue)
+                {
+                    var events = JsonSerializer.Deserialize<List<TopEvent>>(cached.ToString());
+
+                    _logger.LogInformation($"get {keyForRequest}");
+
+                    return events;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex.ToString());
+                return null;
+            }
+
+        }
+
+        public async Task<List<TopEvent>?> SetTop(int number, List<TopEvent> events)
+        {
+            try
+            {
+                var keyForRequest = $"{key}top{number}";
+
+                await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<List<TopEvent>>(events), TimeSpan.FromMinutes(15));
+                _logger.LogInformation($"set {keyForRequest}");
+                return events;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex.ToString());
+                return null;
+            }
+
         }
     }
 }

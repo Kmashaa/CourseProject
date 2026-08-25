@@ -16,5 +16,7 @@ namespace CourseProject.Events.Application.Interfaces
 
         Task<PaginatedResult> GetEventsWithFilterAsync(EventFilter filter);
 
+        Task<List<TopEvent>> GetTopEventsAsync(int number);
+
     }
 }

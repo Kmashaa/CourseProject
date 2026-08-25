@@ -9,7 +9,7 @@ namespace CourseProject.Events.Presentation.Extensions
         {
             services.AddSingleton<IEventModelDtoMapperService, EventModelDtoMapperService>();
             services.AddSingleton<IEventFilterModelDtoMapperService, EventFilterModelDtoMapperService>();
-
+            services.AddSingleton<ITopEventModelDtoMapperService, TopEventModelDtoMapperService>();
 
             return services;
 
