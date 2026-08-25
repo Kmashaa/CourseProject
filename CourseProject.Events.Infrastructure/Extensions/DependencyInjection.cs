@@ -32,7 +32,7 @@ namespace CourseProject.Events.Infrastructure.Extensions
             services.AddSingleton<IEventSeatsReleasedProducer, EventSeatsReleasedProducer>();
             services.AddSingleton<IEventSeatsUnavailableProducer, EventSeatsUnavailableProducer>();
 
-            var redisConnectionString = configuration.GetConnectionString("RedisConnection");
+            var redisConnectionString = configuration["Redis:RedisConnection"].ToString();
             var options = new ConfigurationOptions
             {
                 EndPoints = { redisConnectionString },

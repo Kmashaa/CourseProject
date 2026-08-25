@@ -1,5 +1,6 @@
 ﻿using CourseProject.Events.Application.Interfaces;
 using CourseProject.Events.Domain.Entities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System.Text.Json;
@@ -12,11 +13,14 @@ namespace CourseProject.Events.Infrastructure.Cache
 
         private readonly IDatabase _db;
         private readonly ILogger<CacheService> _logger;
+        private readonly IConfiguration _configuration;
 
-        public CacheService(IConnectionMultiplexer multiplexer, ILogger<CacheService> logger)
+
+        public CacheService(IConnectionMultiplexer multiplexer, ILogger<CacheService> logger, IConfiguration configuration)
         {
             _db = multiplexer.GetDatabase();
             _logger = logger;
+            _configuration = configuration;
         }
 
         public async Task<Event?> GetById(Guid id)
@@ -49,7 +53,8 @@ namespace CourseProject.Events.Infrastructure.Cache
             var keyForRequest = $"{key}{id}";
             try
             {
-                await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<Event>(@event), TimeSpan.FromMinutes(3));
+                var ttl = Convert.ToInt32(_configuration["Redis:ShortTTL"]);
+                await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<Event>(@event), TimeSpan.FromMinutes(ttl));
                 _logger.LogInformation($"set {keyForRequest}");
                 return @event;
             }
@@ -107,8 +112,9 @@ namespace CourseProject.Events.Infrastructure.Cache
             try
             {
                 var keyForRequest = $"{key}top{number}";
+                var ttl = Convert.ToInt32(_configuration["Redis:LongTTL"]);
 
-                await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<List<TopEvent>>(events), TimeSpan.FromMinutes(15));
+                await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<List<TopEvent>>(events), TimeSpan.FromMinutes(ttl));
                 _logger.LogInformation($"set {keyForRequest}");
                 return events;
             }
