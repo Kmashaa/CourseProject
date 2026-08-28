@@ -50,7 +50,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
-builder.Services.AddPresentation();
+builder.Services.AddPresentation(builder.Configuration);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -93,6 +93,7 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
+app.MapPrometheusScrapingEndpoint();
 
 app.MapOpenApi();
 
