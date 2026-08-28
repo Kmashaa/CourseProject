@@ -141,7 +141,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=eventapi-users-db;Port=5432;Database=users;Username=postgres;Password=postgres
-      - Otlp__Endpoint: http://jaeger:4317
+      - Otlp__Endpoint=http://jaeger:4317
     depends_on:
       users-db:
         condition: service_healthy
@@ -169,7 +169,7 @@ services:
       - Redis__RedisConnection=redis:6379
       - Redis__LongTTL=15
       - Redis__ShortTTL=3
-      - Otlp__Endpoint: http://jaeger:4317
+      - Otlp__Endpoint=http://jaeger:4317
     depends_on:
       events-db:
         condition: service_healthy
@@ -198,7 +198,7 @@ services:
       - Jwt__Issuer=CourseProject
       - Jwt__Audience=CourseProjectClients
       - Jwt__ExpirationMinutes=15
-      - Otlp__Endpoint: http://jaeger:4317
+      - Otlp__Endpoint=http://jaeger:4317
     depends_on:
       bookings-db:
         condition: service_healthy
