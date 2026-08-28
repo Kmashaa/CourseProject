@@ -35,7 +35,7 @@ namespace CourseProject.Events.Infrastructure.Cache
                 {
                     var events = JsonSerializer.Deserialize<Event>(cached.ToString());
 
-                    _logger.LogInformation($"return {keyForRequest}");
+                    _logger.LogInformation("return {keyForRequest}", keyForRequest);
 
                     return events;
                 }
@@ -56,7 +56,7 @@ namespace CourseProject.Events.Infrastructure.Cache
             {
                 var ttl = Convert.ToInt32(_configuration["Redis:ShortTTL"]);
                 await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<Event>(@event), TimeSpan.FromMinutes(ttl));
-                _logger.LogInformation($"set {keyForRequest}");
+                _logger.LogInformation("set {keyForRequest}", keyForRequest);
                 return @event;
             }
             catch (Exception ex)
@@ -73,7 +73,7 @@ namespace CourseProject.Events.Infrastructure.Cache
             try
             {
                 await _db.KeyDeleteAsync(keyForRequest);
-                _logger.LogInformation($"delete {keyForRequest}");
+                _logger.LogInformation("delete {keyForRequest}", keyForRequest);
 
             }
             catch (Exception ex)
@@ -94,7 +94,7 @@ namespace CourseProject.Events.Infrastructure.Cache
                 {
                     var events = JsonSerializer.Deserialize<List<TopEvent>>(cached.ToString());
 
-                    _logger.LogInformation($"get {keyForRequest}");
+                    _logger.LogInformation("get {keyForRequest}", keyForRequest);
 
                     return events;
                 }
@@ -117,7 +117,7 @@ namespace CourseProject.Events.Infrastructure.Cache
                 var ttl = Convert.ToInt32(_configuration["Redis:LongTTL"]);
 
                 await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<List<TopEvent>>(events), TimeSpan.FromMinutes(ttl));
-                _logger.LogInformation($"set {keyForRequest}");
+                _logger.LogInformation("set {keyForRequest}", keyForRequest);
                 return events;
             }
             catch (Exception ex)

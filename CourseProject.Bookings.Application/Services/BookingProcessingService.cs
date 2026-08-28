@@ -56,7 +56,7 @@ namespace CourseProject.Bookings.Application.Services
         {
             stoppingToken.ThrowIfCancellationRequested();
 
-            _logger.LogInformation($"{DateTime.Now}: Заявка {bookingId} взята в обработку");
+            _logger.LogInformation("{DateTime}: Заявка {bookingId} взята в обработку", DateTime.Now, bookingId);
 
             await Task.Delay(TimeSpan.FromSeconds(ProcessingDelay), stoppingToken);
 
@@ -79,14 +79,14 @@ namespace CourseProject.Bookings.Application.Services
                     booking.Reject();
                     await bookingRepository.UpdateAsync(booking);
                     //await context.SaveChangesAsync(stoppingToken);
-                    _logger.LogWarning($"{DateTime.Now}: Заявка {booking.Id} отклонена");
+                    _logger.LogWarning("{DateTime}: Заявка {bookingId} отклонена", DateTime.Now, booking.Id);
                 }
                 else
                 {
                     booking.Confirm();
                     await bookingRepository.UpdateAsync(booking);
                     //await context.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation($"{DateTime.Now}: Заявка {booking.Id} обработана");
+                    _logger.LogInformation("{DateTime}: Заявка {bookingId} обработана", DateTime.Now, booking.Id);
 
                 }
             }
@@ -101,7 +101,7 @@ namespace CourseProject.Bookings.Application.Services
                 //await context.SaveChangesAsync(stoppingToken);
                 await bookingRepository.UpdateAsync(booking);
                 //await eventRepository.UpdateAsync(@event);
-                _logger.LogWarning($"{DateTime.Now}: Заявка {booking.Id} отклонена");
+                _logger.LogWarning("{DateTime}: Заявка {bookingId} отклонена", DateTime.Now, booking.Id);
 
             }
             finally

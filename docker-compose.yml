@@ -47,7 +47,30 @@ services:
       interval: 5s 
       timeout: 5s 
       retries: 10
-
+  prometheus: 
+    image: prom/prometheus:v2.51.0 
+    container_name: eventapi-prometheus 
+    volumes: 
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro 
+    ports: 
+      - "9090:9090"
+  jaeger: 
+    image: jaegertracing/all-in-one:1.56 
+    container_name: eventapi-jaeger 
+    ports: 
+      - "16686:16686"   # UI 
+      - "4317:4317"     # OTLP gRPC 
+    environment: 
+      COLLECTOR_OTLP_ENABLED: "true"
+  grafana: 
+    image: grafana/grafana:10.4.2 
+    container_name: eventapi-grafana 
+    ports: 
+      - "3000:3000" 
+    environment: 
+      GF_SECURITY_ADMIN_PASSWORD: admin 
+    volumes: 
+      - grafana-data:/var/lib/grafana
 
   # ─────────────────────────── Базы данных (по одной на сервис) ───────────────────────────
   users-db:
@@ -118,6 +141,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=eventapi-users-db;Port=5432;Database=users;Username=postgres;Password=postgres
+      - Otlp__Endpoint=http://jaeger:4317
     depends_on:
       users-db:
         condition: service_healthy
@@ -145,6 +169,7 @@ services:
       - Redis__RedisConnection=redis:6379
       - Redis__LongTTL=15
       - Redis__ShortTTL=3
+      - Otlp__Endpoint=http://jaeger:4317
     depends_on:
       events-db:
         condition: service_healthy
@@ -173,6 +198,7 @@ services:
       - Jwt__Issuer=CourseProject
       - Jwt__Audience=CourseProjectClients
       - Jwt__ExpirationMinutes=15
+      - Otlp__Endpoint=http://jaeger:4317
     depends_on:
       bookings-db:
         condition: service_healthy
@@ -183,4 +209,5 @@ volumes:
   users-db-data:
   events-db-data:
   bookings-db-data:
+  grafana-data:
 
