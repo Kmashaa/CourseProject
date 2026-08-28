@@ -337,10 +337,10 @@ namespace CourseProject.Bookings.IntegrationTests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-             var topicInitializer = new KafkaTopicInitializer(
-                _configuration,
-                NullLogger<KafkaTopicInitializer>.Instance
-            );
+            var topicInitializer = new KafkaTopicInitializer(
+               _configuration,
+               NullLogger<KafkaTopicInitializer>.Instance
+           );
             await topicInitializer.StartAsync(CancellationToken.None);
             await topicInitializer.StopAsync(CancellationToken.None);
 
@@ -421,10 +421,10 @@ namespace CourseProject.Bookings.IntegrationTests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-             var topicInitializer = new KafkaTopicInitializer(
-                _configuration,
-                NullLogger<KafkaTopicInitializer>.Instance
-            );
+            var topicInitializer = new KafkaTopicInitializer(
+               _configuration,
+               NullLogger<KafkaTopicInitializer>.Instance
+           );
             await topicInitializer.StartAsync(CancellationToken.None);
             await topicInitializer.StopAsync(CancellationToken.None);
 
@@ -482,10 +482,10 @@ namespace CourseProject.Bookings.IntegrationTests
             var eventId = Guid.NewGuid();
             var userId = Guid.NewGuid();
 
-             var topicInitializer = new KafkaTopicInitializer(
-                _configuration,
-                NullLogger<KafkaTopicInitializer>.Instance
-            );
+            var topicInitializer = new KafkaTopicInitializer(
+               _configuration,
+               NullLogger<KafkaTopicInitializer>.Instance
+           );
             await topicInitializer.StartAsync(CancellationToken.None);
             await topicInitializer.StopAsync(CancellationToken.None);
 
@@ -559,10 +559,10 @@ namespace CourseProject.Bookings.IntegrationTests
         {
             // Arrange
 
-             var topicInitializer = new KafkaTopicInitializer(
-                _configuration,
-                NullLogger<KafkaTopicInitializer>.Instance
-            );
+            var topicInitializer = new KafkaTopicInitializer(
+               _configuration,
+               NullLogger<KafkaTopicInitializer>.Instance
+           );
             await topicInitializer.StartAsync(CancellationToken.None);
             await topicInitializer.StopAsync(CancellationToken.None);
 

@@ -50,6 +50,28 @@ namespace CourseProject.Events.Presentation.Controllers
             return Ok(eventsModel); //200 Ok
         }
 
+
+
+        /// <summary>
+        /// Get top 10 events
+        /// </summary>
+        /// <param name="id">Number of events</param>
+        /// <returns>Top of events</returns>
+        /// <response code="200">Events received successfully</response>
+        /// <response code="404">Events not found</response>
+        [HttpGet("top")]
+        public async Task<IActionResult> GetTop(int number = 10)
+        {
+            var topEvents = await _eventService.GetTopEvents(number);
+
+            if (topEvents == null)
+            {
+                return NotFound(); // 404 Not found
+            }
+            var eventModel = topEvents.Select(o => _topEventModelDtoMapperService.DtoToModel(o));
+            return Ok(eventModel); // 200 Ok
+        }
+
         /// <summary>
         /// Get event by ID
         /// </summary>
@@ -71,26 +93,6 @@ namespace CourseProject.Events.Presentation.Controllers
             return Ok(eventModel); // 200 Ok
         }
 
-
-        /// <summary>
-        /// Get top 10 events
-        /// </summary>
-        /// <param name="id">Number of events</param>
-        /// <returns>Top of events</returns>
-        /// <response code="200">Events received successfully</response>
-        /// <response code="404">Events not found</response>
-        [HttpGet("top")]
-        public async Task<IActionResult> GetTop(int number = 10)
-        {
-            var topEvents = await _eventService.GetTopEvents(number);
-
-            if (topEvents == null)
-            {
-                return NotFound(); // 404 Not found
-            }
-            var eventModel = topEvents.Select(o=>_topEventModelDtoMapperService.DtoToModel(o));
-            return Ok(eventModel); // 200 Ok
-        }
         /// <summary>
         /// Create new event
         /// </summary>

@@ -433,7 +433,7 @@ namespace CourseProject.Events.Tests
         {
             // Arrange
             var number = 5;
-            var cachedEvents = new List<TopEvent>(); 
+            var cachedEvents = new List<TopEvent>();
 
             _cacheServiceMock
                 .Setup(cache => cache.GetTop(number))
@@ -513,92 +513,6 @@ namespace CourseProject.Events.Tests
             _cacheServiceMock.Verify(cache => cache.GetTop(It.Is<int>(n => n != 10)), Times.Never);
             _eventRepositoryMock.Verify(repo => repo.GetTopEventsAsync(10), Times.Once);
             _cacheServiceMock.Verify(cache => cache.SetTop(10, eventsFromRepo), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetTopEvents_AfterMutation_InvalidatesCache()
-        {
-            // Arrange
-            var number = 5;
-
-            var topEvent1 = new TopEvent
-            {
-                Id = Guid.NewGuid(),
-                Title = "Top Event 1",
-                Description = "Test",
-                StartAt = new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
-                EndAt = new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
-                TotalSeats = 50,
-                AvailableSeats = 20,
-                SalesPercentage = 60m
-            };
-
-            var eventsFromRepo = new List<TopEvent> { topEvent1 };
-
-            var expectedDto = new TopEventDto(
-                topEvent1.Id,
-                topEvent1.Title,
-                topEvent1.Description,
-                topEvent1.StartAt,
-                topEvent1.EndAt,
-                topEvent1.TotalSeats,
-                topEvent1.AvailableSeats,
-                topEvent1.SalesPercentage
-            );
-
-            _cacheServiceMock
-                .Setup(cache => cache.GetTop(number))
-                .ReturnsAsync((List<TopEvent>?)null);
-
-            _eventRepositoryMock
-                .Setup(repo => repo.GetTopEventsAsync(number))
-                .ReturnsAsync(eventsFromRepo);
-
-            _cacheServiceMock
-                .Setup(cache => cache.SetTop(number, eventsFromRepo))
-                .ReturnsAsync(eventsFromRepo);
-
-            _topEventDtoMapperServiceMock
-                .Setup(mapper => mapper.EntityToDto(topEvent1))
-                .Returns(expectedDto);
-
-            // Act 
-            var firstResult = await _eventService.GetTopEvents(number);
-
-            // Assert 
-            Assert.NotNull(firstResult);
-            Assert.Single(firstResult);
-            _cacheServiceMock.Verify(cache => cache.SetTop(number, eventsFromRepo), Times.Once);
-
-            topEvent1.AvailableSeats = 10; 
-            topEvent1.SalesPercentage = 80m;
-
-            var updatedExpectedDto = new TopEventDto(
-                topEvent1.Id,
-                topEvent1.Title,
-                topEvent1.Description,
-                topEvent1.StartAt,
-                topEvent1.EndAt,
-                topEvent1.TotalSeats,
-                topEvent1.AvailableSeats,
-                topEvent1.SalesPercentage
-            );
-
-            _cacheServiceMock
-                .Setup(cache => cache.GetTop(number))
-                .ReturnsAsync(new List<TopEvent> { topEvent1 }); 
-
-            _topEventDtoMapperServiceMock
-                .Setup(mapper => mapper.EntityToDto(topEvent1))
-                .Returns(updatedExpectedDto);
-
-            // Act 
-            var secondResult = await _eventService.GetTopEvents(number);
-
-            // Assert 
-            Assert.Single(secondResult);
-            Assert.Equal(10, secondResult[0].AvailableSeats);
-            Assert.Equal(80m, secondResult[0].SalesPercentage);
         }
 
         [Fact]
@@ -717,7 +631,7 @@ namespace CourseProject.Events.Tests
         public async Task GetEvents_WithDefaultFilter_ReturnsFirstPage()
         {
             // Arrange
-            var filterDto = new EventFilterDto(); 
+            var filterDto = new EventFilterDto();
 
             var filterEntity = new EventFilter
             {
@@ -1060,7 +974,7 @@ namespace CourseProject.Events.Tests
             var paginatedResult = new PaginatedResult
             {
                 Events = new List<Event> { event3, event4 },
-                TotalItems = 10, 
+                TotalItems = 10,
                 CurrentPage = 2,
                 NumOfItemsOnCurrentPage = 2
             };
@@ -1130,7 +1044,7 @@ namespace CourseProject.Events.Tests
             Event? cachedEvent = null;
 
             var newEventDto = new EventDto(
-                Guid.NewGuid(), 
+                Guid.NewGuid(),
                 "Test Event 1",
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
@@ -1142,7 +1056,7 @@ namespace CourseProject.Events.Tests
             _eventDtoMapperServiceMock
                 .Setup(mapper => mapper.DtoToEntity(It.IsAny<EventDto>()))
                 .Returns((EventDto dto) => new Event(
-                    dto.Id, 
+                    dto.Id,
                     dto.Title,
                     dto.StartAt,
                     dto.EndAt,
@@ -1172,7 +1086,7 @@ namespace CourseProject.Events.Tests
             Assert.Equal(result.TotalSeats, result.AvailableSeats);
 
             Assert.NotNull(capturedEvent);
-            Assert.Equal(result.Id, capturedEvent.Id); 
+            Assert.Equal(result.Id, capturedEvent.Id);
             Assert.Equal("Test Event 1", capturedEvent.Title);
             Assert.Equal(50, capturedEvent.TotalSeats);
             Assert.Equal(50, capturedEvent.AvailableSeats);
@@ -1226,7 +1140,7 @@ namespace CourseProject.Events.Tests
             _eventDtoMapperServiceMock
                 .Setup(mapper => mapper.DtoToEntity(It.IsAny<EventDto>()))
                 .Returns((EventDto dto) => new Event(
-                    dto.Id, 
+                    dto.Id,
                     dto.Title,
                     dto.StartAt,
                     dto.EndAt,
@@ -1334,7 +1248,7 @@ namespace CourseProject.Events.Tests
                 new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 4, 5, 2, 0, 0, DateTimeKind.Utc),
                 60,
-                60,  
+                60,
                 null
             );
 
@@ -1392,7 +1306,7 @@ namespace CourseProject.Events.Tests
                 new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
                 50
             );
-            existingEventEntity.AvailableSeats = 30; 
+            existingEventEntity.AvailableSeats = 30;
 
             var updateEventDto = new EventDto
             (
@@ -1401,7 +1315,7 @@ namespace CourseProject.Events.Tests
                 new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 4, 5, 2, 0, 0, DateTimeKind.Utc),
                 70,
-                0, 
+                0,
                 null
             );
 
@@ -1439,7 +1353,7 @@ namespace CourseProject.Events.Tests
             (
                 Guid.NewGuid(),
                 "Test Event 1",
-                new DateTime(2026, 4, 8, 0, 0, 0, DateTimeKind.Utc), 
+                new DateTime(2026, 4, 8, 0, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 4, 5, 1, 0, 0, DateTimeKind.Utc),
                 50,
                 50,

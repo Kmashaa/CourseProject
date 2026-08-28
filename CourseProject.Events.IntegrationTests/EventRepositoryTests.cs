@@ -792,7 +792,7 @@ namespace CourseProject.IntegrationTests
                 new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 4, 5, 2, 0, 0, DateTimeKind.Utc),
                 100
-            ); 
+            );
 
             var event2 = new Event(
                 Guid.NewGuid(),
@@ -801,7 +801,7 @@ namespace CourseProject.IntegrationTests
                 new DateTime(2026, 4, 10, 2, 0, 0, DateTimeKind.Utc),
                 100
             );
-            event2.TryReserveSeats(50); 
+            event2.TryReserveSeats(50);
 
             var event3 = new Event(
                 Guid.NewGuid(),
@@ -810,7 +810,7 @@ namespace CourseProject.IntegrationTests
                 new DateTime(2026, 4, 15, 2, 0, 0, DateTimeKind.Utc),
                 100
             );
-            event3.TryReserveSeats(90); 
+            event3.TryReserveSeats(90);
 
             var event4 = new Event(
                 Guid.NewGuid(),
@@ -819,7 +819,7 @@ namespace CourseProject.IntegrationTests
                 new DateTime(2026, 4, 20, 2, 0, 0, DateTimeKind.Utc),
                 200
             );
-            event4.TryReserveSeats(160); 
+            event4.TryReserveSeats(160);
 
             await context.Events.AddRangeAsync(new[] { event1, event2, event3, event4 });
             await context.SaveChangesAsync();
@@ -841,7 +841,7 @@ namespace CourseProject.IntegrationTests
             Assert.Equal(50m, result[2].SalesPercentage);
         }
 
-        
+
         [Fact]
         public async Task GetTopEventsAsync_WithEventsHavingSameSalesPercentage_OrdersByTotalSeats()
         {
@@ -876,16 +876,16 @@ namespace CourseProject.IntegrationTests
                 new DateTime(2026, 4, 15, 2, 0, 0, DateTimeKind.Utc),
                 100
             );
-            event3.TryReserveSeats(50);  
+            event3.TryReserveSeats(50);
             await context.Events.AddRangeAsync(new[] { event1, event2, event3 });
             await context.SaveChangesAsync();
 
-                         var result = await eventRepository.GetTopEventsAsync(3);
+            var result = await eventRepository.GetTopEventsAsync(3);
 
-                         Assert.NotNull(result);
+            Assert.NotNull(result);
             Assert.Equal(3, result.Count);
 
-                         Assert.Equal("Large Event", result[0].Title);
+            Assert.Equal("Large Event", result[0].Title);
             Assert.Equal(200, result[0].TotalSeats);
             Assert.Equal(50m, result[0].SalesPercentage);
 
@@ -922,7 +922,7 @@ namespace CourseProject.IntegrationTests
                 new DateTime(2026, 4, 10, 2, 0, 0, DateTimeKind.Utc),
                 100
             );
-            normalEvent.TryReserveSeats(30);  
+            normalEvent.TryReserveSeats(30);
             await context.Events.AddRangeAsync(new[] { eventWithZeroSeats, normalEvent });
             await context.SaveChangesAsync();
 
@@ -982,7 +982,7 @@ namespace CourseProject.IntegrationTests
             Assert.Empty(result);
         }
 
-       
+
 
         [Fact]
         public async Task GetTopEventsAsync_CalculatesSalesPercentageCorrectly()
@@ -1000,7 +1000,7 @@ namespace CourseProject.IntegrationTests
                 new DateTime(2026, 4, 5, 2, 0, 0, DateTimeKind.Utc),
                 300
             );
-            event1.TryReserveSeats(100);  
+            event1.TryReserveSeats(100);
             var event2 = new Event(
                 Guid.NewGuid(),
                 "Event 2",
@@ -1008,7 +1008,7 @@ namespace CourseProject.IntegrationTests
                 new DateTime(2026, 4, 10, 2, 0, 0, DateTimeKind.Utc),
                 150
             );
-            event2.TryReserveSeats(75);  
+            event2.TryReserveSeats(75);
             await context.Events.AddRangeAsync(new[] { event1, event2 });
             await context.SaveChangesAsync();
 
@@ -1019,10 +1019,10 @@ namespace CourseProject.IntegrationTests
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
 
-                         Assert.Equal(50m, result[0].SalesPercentage);
+            Assert.Equal(50m, result[0].SalesPercentage);
             Assert.Equal(33.33m, result[1].SalesPercentage);
 
-                         Assert.Equal(2, BitConverter.GetBytes(decimal.GetBits(result[1].SalesPercentage)[3])[2]);
+            Assert.Equal(2, BitConverter.GetBytes(decimal.GetBits(result[1].SalesPercentage)[3])[2]);
         }
 
         [Fact]
@@ -1043,7 +1043,7 @@ namespace CourseProject.IntegrationTests
                 100,
                 "Event Description"
             );
-            @event.TryReserveSeats(75);  
+            @event.TryReserveSeats(75);
             await context.Events.AddAsync(@event);
             await context.SaveChangesAsync();
 

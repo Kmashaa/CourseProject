@@ -50,7 +50,7 @@ namespace CourseProject.Events.IntegrationTests
         {
             var services = new ServiceCollection();
 
-                         services.AddSingleton(_eventRepositoryMock.Object);
+            services.AddSingleton(_eventRepositoryMock.Object);
             services.AddSingleton(_cacheServiceMock.Object);
             services.AddSingleton(_eventSeatsReleasedProducerMock.Object);
             services.AddSingleton(_eventSeatsReservedProducerMock.Object);
@@ -113,7 +113,7 @@ namespace CourseProject.Events.IntegrationTests
             return new ConsumerBuilder<string, string>(config).Build();
         }
 
- 
+
         [Fact]
         public async Task EventSeatsReleasedProducer_PublishesMessage_ToCorrectTopic()
         {
@@ -278,8 +278,8 @@ NullLogger<KafkaTopicInitializer>.Instance
             );
         }
 
- 
- 
+
+
         [Fact]
         public async Task EventSeatsUnavailableProducer_PublishesMessage_WithReason()
         {
@@ -321,8 +321,8 @@ NullLogger<KafkaTopicInitializer>.Instance
             Assert.Equal(reason, deserializedEvent.Reason);
         }
 
- 
- 
+
+
         [Fact]
         public async Task BookingCreatedConsumer_WithValidEvent_ReservesSeatsAndPublishesReserved()
         {
@@ -383,14 +383,14 @@ NullLogger<KafkaTopicInitializer>.Instance
             var cts = new CancellationTokenSource();
             var consumerTask = consumer.StartAsync(cts.Token);
 
-            await Task.Delay(2000);  
+            await Task.Delay(2000);
             await producer.ProduceAsync(BookingCreated.TopicName, new Message<string, string>
             {
                 Key = eventId.ToString(),
                 Value = JsonSerializer.Serialize(bookingCreated)
             });
 
-            await Task.Delay(3000);  
+            await Task.Delay(3000);
             // Assert
             _eventRepositoryMock.Verify(r => r.GetByIdAsync(eventId), Times.AtLeastOnce);
             _eventRepositoryMock.Verify(r => r.UpdateAsync(@event), Times.AtLeastOnce);
@@ -412,10 +412,10 @@ NullLogger<KafkaTopicInitializer>.Instance
             var bookingId = Guid.NewGuid();
             var userId = Guid.NewGuid();
 
-                         var topicInitializer = new KafkaTopicInitializer(
-                _configuration,
-                NullLogger<KafkaTopicInitializer>.Instance
-            );
+            var topicInitializer = new KafkaTopicInitializer(
+   _configuration,
+   NullLogger<KafkaTopicInitializer>.Instance
+);
             await topicInitializer.StartAsync(CancellationToken.None);
             await topicInitializer.StopAsync(CancellationToken.None);
 
@@ -496,7 +496,7 @@ NullLogger<KafkaTopicInitializer>.Instance
             var @event = new Event(
                 eventId,
                 "Past Event",
-                DateTime.UtcNow.AddHours(-2),                  DateTime.UtcNow.AddHours(-1),                  100
+                DateTime.UtcNow.AddHours(-2), DateTime.UtcNow.AddHours(-1), 100
             );
 
             _eventRepositoryMock
@@ -580,7 +580,7 @@ NullLogger<KafkaTopicInitializer>.Instance
                 DateTime.UtcNow.AddDays(1).AddHours(2),
                 1
             );
-            @event.TryReserveSeats(1);  
+            @event.TryReserveSeats(1);
             _eventRepositoryMock
                 .Setup(r => r.GetByIdAsync(eventId))
                 .ReturnsAsync(@event);
@@ -639,8 +639,8 @@ NullLogger<KafkaTopicInitializer>.Instance
             await consumer.StopAsync(CancellationToken.None);
         }
 
- 
- 
+
+
         [Fact]
         public async Task BookingCancelledConsumer_WithValidEvent_ReleasesSeatsAndPublishesReleased()
         {
@@ -664,7 +664,7 @@ NullLogger<KafkaTopicInitializer>.Instance
                 DateTime.UtcNow.AddDays(1).AddHours(2),
                 100
             );
-            @event.TryReserveSeats(1);  
+            @event.TryReserveSeats(1);
             _eventRepositoryMock
                 .Setup(r => r.GetByIdAsync(eventId))
                 .ReturnsAsync(@event);
@@ -784,8 +784,8 @@ NullLogger<KafkaTopicInitializer>.Instance
             await consumer.StopAsync(CancellationToken.None);
         }
 
- 
- 
+
+
         [Fact]
         public async Task KafkaTopicInitializer_CreatesTopics_WhenTheyDontExist()
         {
@@ -847,5 +847,5 @@ NullLogger<KafkaTopicInitializer>.Instance
             await initializer.StopAsync(CancellationToken.None);
         }
 
-     }
+    }
 }

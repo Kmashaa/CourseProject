@@ -465,6 +465,7 @@ namespace CourseProject.Bookings.Tests
             Assert.True(booking.ProcessedAt <= DateTime.Now, "ProcessedAt should be set to current time 2");
         }
 
+        [Fact]
         public async Task Cancel_WhenCalled_ShouldSetStatusToCancelledAndPopulateProcessedAt()
         {
             // Arrange
@@ -586,7 +587,7 @@ namespace CourseProject.Bookings.Tests
             ), Times.Once);
             _bookingDtoMapperServiceMock.Verify(mapper => mapper.EntityToDto(It.IsAny<Booking>()), Times.Once);
 
-       }
+        }
 
         [Fact]
         public async Task CreateBookingAsync_WhenOneUserReachesLimit_OtherUserCanStillBook()

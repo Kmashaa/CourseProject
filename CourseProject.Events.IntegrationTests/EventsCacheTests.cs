@@ -79,7 +79,7 @@ namespace CourseProject.Events.IntegrationTests
             };
         }
 
- 
+
         [Fact]
         public async Task GetById_WhenEventExistsInCache_ReturnsEvent()
         {
@@ -123,7 +123,7 @@ namespace CourseProject.Events.IntegrationTests
                 totalSeats: 150,
                 description: "Event with description"
             );
-            @event.TryReserveSeats(30);  
+            @event.TryReserveSeats(30);
             await _cacheService.SetById(@event.Id, @event);
 
             // Act
@@ -135,10 +135,11 @@ namespace CourseProject.Events.IntegrationTests
             Assert.Equal("Complex Event", result.Title);
             Assert.Equal("Event with description", result.Description);
             Assert.Equal(150, result.TotalSeats);
-            Assert.Equal(120, result.AvailableSeats);          }
+            Assert.Equal(120, result.AvailableSeats);
+        }
 
- 
- 
+
+
         [Fact]
         public async Task SetById_WithValidEvent_ReturnsEvent()
         {
@@ -179,14 +180,14 @@ namespace CourseProject.Events.IntegrationTests
             var @event = CreateTestEvent(title: "Original Event", totalSeats: 100);
             await _cacheService.SetById(@event.Id, @event);
 
-                         var updatedEvent = new Event(
-                @event.Id,
-                "Updated Event",
-                DateTime.UtcNow.AddDays(2),
-                DateTime.UtcNow.AddDays(2).AddHours(2),
-                150,
-                "Updated Description"
-            );
+            var updatedEvent = new Event(
+   @event.Id,
+   "Updated Event",
+   DateTime.UtcNow.AddDays(2),
+   DateTime.UtcNow.AddDays(2).AddHours(2),
+   150,
+   "Updated Description"
+);
 
             // Act
             await _cacheService.SetById(updatedEvent.Id, updatedEvent);
@@ -196,10 +197,10 @@ namespace CourseProject.Events.IntegrationTests
             Assert.NotNull(result);
             Assert.Equal("Updated Event", result.Title);
             Assert.Equal(150, result.TotalSeats);
-            Assert.Equal(150, result.AvailableSeats);              Assert.Equal("Updated Description", result.Description);
+            Assert.Equal(150, result.AvailableSeats); Assert.Equal("Updated Description", result.Description);
         }
- 
- 
+
+
         [Fact]
         public async Task DeleteById_WhenEventExists_RemovesFromCache()
         {
@@ -207,7 +208,7 @@ namespace CourseProject.Events.IntegrationTests
             var @event = CreateTestEvent();
             await _cacheService.SetById(@event.Id, @event);
 
-                         var beforeDelete = await _cacheService.GetById(@event.Id);
+            var beforeDelete = await _cacheService.GetById(@event.Id);
             Assert.NotNull(beforeDelete);
 
             // Act
@@ -225,7 +226,8 @@ namespace CourseProject.Events.IntegrationTests
             var nonExistentId = Guid.NewGuid();
 
             // Act & Assert
-            await _cacheService.DeleteById(nonExistentId);          }
+            await _cacheService.DeleteById(nonExistentId);
+        }
 
         [Fact]
         public async Task DeleteById_ThenSetById_CanStoreAgain()
@@ -244,8 +246,8 @@ namespace CourseProject.Events.IntegrationTests
             Assert.Equal(@event.Id, result.Id);
         }
 
- 
- 
+
+
         [Fact]
         public async Task GetTop_WhenTopEventsExistInCache_ReturnsTopEvents()
         {
@@ -322,8 +324,8 @@ namespace CourseProject.Events.IntegrationTests
             Assert.Equal("Top 5 - Event 1", result5[0].Title);
         }
 
- 
- 
+
+
         [Fact]
         public async Task SetTop_WithValidList_ReturnsList()
         {
@@ -416,8 +418,8 @@ namespace CourseProject.Events.IntegrationTests
             Assert.Equal(75.5m, result[0].SalesPercentage);
         }
 
- 
- 
+
+
         [Fact]
         public async Task SetById_WithShortTTL_ExpiresAfterTime()
         {
@@ -427,16 +429,16 @@ namespace CourseProject.Events.IntegrationTests
             // Act
             await _cacheService.SetById(@event.Id, @event);
 
-                         var immediatelyAfterSet = await _cacheService.GetById(@event.Id);
+            var immediatelyAfterSet = await _cacheService.GetById(@event.Id);
             Assert.NotNull(immediatelyAfterSet);
 
-                                      await Task.Delay(TimeSpan.FromSeconds(5));  
+            await Task.Delay(TimeSpan.FromSeconds(5));
             // Assert
             var afterTTL = await _cacheService.GetById(@event.Id);
-                                  }
+        }
 
- 
- 
+
+
         [Fact]
         public async Task CacheOperations_WithMultipleEvents_HandlesCorrectly()
         {
@@ -462,9 +464,9 @@ namespace CourseProject.Events.IntegrationTests
             Assert.Equal("Event 2", result2.Title);
             Assert.Equal("Event 3", result3.Title);
 
-                         await _cacheService.DeleteById(event2.Id);
+            await _cacheService.DeleteById(event2.Id);
 
-                         var afterDelete1 = await _cacheService.GetById(event1.Id);
+            var afterDelete1 = await _cacheService.GetById(event1.Id);
             var afterDelete2 = await _cacheService.GetById(event2.Id);
             var afterDelete3 = await _cacheService.GetById(event3.Id);
 
@@ -496,7 +498,7 @@ namespace CourseProject.Events.IntegrationTests
             Assert.Equal("Regular Event", eventResult.Title);
             Assert.Equal("Top Event", topResult[0].Title);
 
-                         await _cacheService.DeleteById(@event.Id);
+            await _cacheService.DeleteById(@event.Id);
 
             var eventAfterDelete = await _cacheService.GetById(@event.Id);
             var topAfterDelete = await _cacheService.GetTop(1);
@@ -506,5 +508,5 @@ namespace CourseProject.Events.IntegrationTests
             Assert.Equal("Top Event", topAfterDelete[0].Title);
         }
 
-     }
+    }
 }

@@ -27,7 +27,7 @@ namespace CourseProject.Events.Infrastructure.Cache
         {
             try
             {
-                var keyForRequest = key + id.ToString();
+                var keyForRequest = CacheKeys.EventById(id);
 
                 RedisValue cached = await _db.StringGetAsync(keyForRequest);
 
@@ -50,7 +50,8 @@ namespace CourseProject.Events.Infrastructure.Cache
 
         public async Task<Event?> SetById(Guid id, Event @event)
         {
-            var keyForRequest = $"{key}{id}";
+            var keyForRequest = CacheKeys.EventById(id);
+
             try
             {
                 var ttl = Convert.ToInt32(_configuration["Redis:ShortTTL"]);
@@ -67,7 +68,7 @@ namespace CourseProject.Events.Infrastructure.Cache
 
         public async Task DeleteById(Guid id)
         {
-            var keyForRequest = $"{key}{id}";
+            var keyForRequest = CacheKeys.EventById(id);
 
             try
             {
@@ -85,7 +86,7 @@ namespace CourseProject.Events.Infrastructure.Cache
         {
             try
             {
-                var keyForRequest = $"{key}top{number}";
+                var keyForRequest = CacheKeys.TopEvents(number);
 
                 RedisValue cached = await _db.StringGetAsync(keyForRequest);
 
@@ -111,7 +112,8 @@ namespace CourseProject.Events.Infrastructure.Cache
         {
             try
             {
-                var keyForRequest = $"{key}top{number}";
+                var keyForRequest = CacheKeys.TopEvents(number);
+
                 var ttl = Convert.ToInt32(_configuration["Redis:LongTTL"]);
 
                 await _db.StringSetAsync(keyForRequest, JsonSerializer.Serialize<List<TopEvent>>(events), TimeSpan.FromMinutes(ttl));
@@ -125,5 +127,13 @@ namespace CourseProject.Events.Infrastructure.Cache
             }
 
         }
+    }
+
+    public static class CacheKeys
+    {
+        private const string EventsPrefix = "events:";
+
+        public static string EventById(Guid id) => $"{EventsPrefix}{id}";
+        public static string TopEvents(int count) => $"{EventsPrefix}top{count}";
     }
 }

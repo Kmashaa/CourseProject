@@ -97,7 +97,7 @@ namespace CourseProject.Events.Infrastructure.Repositories
         public async Task<List<TopEvent>> GetTopEventsAsync(int number)
         {
             var topEvents = await _context.Events
-                .Where(e => e.TotalSeats > 0) 
+                .Where(e => e.TotalSeats > 0)
                 .Select(e => new TopEvent
                 {
                     Id = e.Id,
@@ -109,8 +109,8 @@ namespace CourseProject.Events.Infrastructure.Repositories
                     EndAt = e.EndAt,
                     SalesPercentage = Math.Round((decimal)(e.TotalSeats - e.AvailableSeats) / e.TotalSeats * 100, 2)
                 })
-                .OrderByDescending(e => e.SalesPercentage) 
-                .ThenByDescending(e => e.TotalSeats) 
+                .OrderByDescending(e => e.SalesPercentage)
+                .ThenByDescending(e => e.TotalSeats)
                 .Take(number)
                 .ToListAsync();
 

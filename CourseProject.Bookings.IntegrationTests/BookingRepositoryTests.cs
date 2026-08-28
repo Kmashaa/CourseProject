@@ -283,7 +283,7 @@ namespace CourseProject.Bookings.IntegrationTests
             var result = await bookingRepository.GetActiveBookingsCountByUserIdAsync(userId);
 
             // Assert
-            Assert.Equal(2, result); 
+            Assert.Equal(2, result);
         }
 
         [Fact]
@@ -334,8 +334,8 @@ namespace CourseProject.Bookings.IntegrationTests
             var result2 = await bookingRepository.GetActiveBookingsCountByUserIdAsync(user2Id);
 
             // Assert
-            Assert.Equal(2, result1); 
-            Assert.Equal(1, result2); 
+            Assert.Equal(2, result1);
+            Assert.Equal(1, result2);
         }
 
         [Fact]
@@ -351,7 +351,7 @@ namespace CourseProject.Bookings.IntegrationTests
             await context.SaveChangesAsync();
 
             var duplicateBooking = new Booking(
-                booking.Id, 
+                booking.Id,
                 Guid.NewGuid(),
                 Guid.NewGuid(),
                 BookingStatus.Pending,

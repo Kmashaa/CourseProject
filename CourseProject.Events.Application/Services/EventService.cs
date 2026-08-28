@@ -34,7 +34,7 @@ namespace CourseProject.Events.Application.Services
         public async Task<EventDto?> GetEventByIdAsync(Guid id)
         {
             var cachedEvent = await _cache.GetById(id);
-            if (cachedEvent!=null)
+            if (cachedEvent != null)
             {
                 return _eventDtoMapperService.EntityToDto(cachedEvent);
             }
