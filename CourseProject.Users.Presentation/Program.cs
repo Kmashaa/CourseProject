@@ -103,7 +103,7 @@ using (var scope = app.Services.CreateScope())
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 app.MapPrometheusScrapingEndpoint();
-    
+
 
 app.MapOpenApi();
 

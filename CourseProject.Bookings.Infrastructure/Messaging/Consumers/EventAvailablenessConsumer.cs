@@ -76,9 +76,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 continue;
                             }
 
-                            _logger.LogInformation($"[{consumeResult.TopicPartitionOffset}] " +
-                                          $"Key: {consumeResult.Message.Key} " +
-                                          $"Value: {consumeResult.Message.Value}");
+                            _logger.LogInformation("[{TopicPartitionOffset}] Key: {Message.Key} Value: {Message.Value}", consumeResult.TopicPartitionOffset, consumeResult.Message.Key, consumeResult.Message.Value);
 
 
                             using (var scope = _scopeFactory.CreateScope())
@@ -118,9 +116,7 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                                 continue;
                             }
 
-                            _logger.LogInformation($"[{consumeResult.TopicPartitionOffset}] " +
-                                          $"Key: {consumeResult.Message.Key} " +
-                                          $"Value: {consumeResult.Message.Value}");
+                            _logger.LogInformation("[{TopicPartitionOffset}] Key: {Message.Key} Value: {Message.Value}", consumeResult.TopicPartitionOffset, consumeResult.Message.Key, consumeResult.Message.Value);
 
 
                             using (var scope = _scopeFactory.CreateScope())

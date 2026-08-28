@@ -74,9 +74,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                             continue;
                         }
 
-                        _logger.LogInformation($"[{consumeResult.TopicPartitionOffset}] " +
-                                      $"Key: {consumeResult.Message.Key} " +
-                                      $"Value: {consumeResult.Message.Value}");
+                        _logger.LogInformation("[{TopicPartitionOffset}] Key: {Message.Key} Value: {Message.Value}", consumeResult.TopicPartitionOffset, consumeResult.Message.Key, consumeResult.Message.Value);
 
                         using (var scope = _scopeFactory.CreateScope())
                         {
@@ -107,7 +105,7 @@ namespace CourseProject.Events.Infrastructure.Messaging.Consumers
                                 await eventSeatsReservedProducer.PublishEventSeatsReserved(bookingCreated.BookingId, bookingCreated.EventId, bookingCreated.UserId, stoppingToken);
                                 await cache.SetById(@event.Id, @event);
 
-                                _logger.LogInformation("Seats: " + @event.AvailableSeats);
+                                _logger.LogInformation("Seats: {AvailableSeats}", @event.AvailableSeats);
                             }
                             else
                             {

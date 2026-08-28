@@ -49,16 +49,16 @@ namespace CourseProject.Bookings.Infrastructure.Messaging.Consumers
                 {
                     if (ex.Results[0].Error.Code == ErrorCode.TopicAlreadyExists)
                     {
-                        _logger.LogWarning($"Топик '{topicName}' уже существует. Пропускаем создание.");
+                        _logger.LogWarning("Топик '{topicName}' уже существует. Пропускаем создание.", topicName);
                     }
                     else
                     {
-                        _logger.LogWarning($"Не удалось создать топик '{topicName}' из-за ошибки Kafka, но запуск продолжается.");
+                        _logger.LogWarning("Не удалось создать топик '{topicName}' из-за ошибки Kafka, но запуск продолжается.", topicName);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Непредвиденная ошибка при инициализации топика '{topicName}'. Запуск продолжается.");
+                    _logger.LogError("Непредвиденная ошибка при инициализации топика '{topicName}'. Запуск продолжается.", topicName);
                 }
             }
         }
