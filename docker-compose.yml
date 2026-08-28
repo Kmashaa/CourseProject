@@ -37,6 +37,18 @@ services:
       timeout: 10s
       retries: 15
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: eventapi-redis
+    ports:
+      - "6379:6379"
+    healthcheck: 
+      test: ["CMD", "redis-cli", "ping"] 
+      interval: 5s 
+      timeout: 5s 
+      retries: 10
+
+
   # ─────────────────────────── Базы данных (по одной на сервис) ───────────────────────────
   users-db:
     image: postgres:16-alpine
@@ -130,10 +142,15 @@ services:
       - Jwt__Issuer=CourseProject
       - Jwt__Audience=CourseProjectClients
       - Jwt__ExpirationMinutes=15
+      - Redis__RedisConnection=redis:6379
+      - Redis__LongTTL=15
+      - Redis__ShortTTL=3
     depends_on:
       events-db:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   bookings-service:

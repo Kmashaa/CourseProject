@@ -11,14 +11,18 @@ namespace CourseProject.Events.Application.Services
         private readonly IEventDtoMapperService _eventDtoMapperService;
         private readonly IEventFilterDtoMapperService _eventFilterDtoMapperService;
         private readonly IPaginatedResultDtoMapperService _paginatedResultDtoMapperService;
+        private readonly ITopEventDtoMapperService _topEventDtoMapperService;
+        private readonly ICacheService _cache;
 
 
-        public EventService(IEventRepository eventRepository, IEventDtoMapperService eventDtoMapperService, IEventFilterDtoMapperService eventFilterDtoMapperService, IPaginatedResultDtoMapperService paginatedResultDtoMapperService)
+        public EventService(IEventRepository eventRepository, IEventDtoMapperService eventDtoMapperService, IEventFilterDtoMapperService eventFilterDtoMapperService, IPaginatedResultDtoMapperService paginatedResultDtoMapperService, ITopEventDtoMapperService topEventDtoMapperService, ICacheService cache)
         {
             _eventRepository = eventRepository;
             _eventDtoMapperService = eventDtoMapperService;
             _eventFilterDtoMapperService = eventFilterDtoMapperService;
             _paginatedResultDtoMapperService = paginatedResultDtoMapperService;
+            _topEventDtoMapperService = topEventDtoMapperService;
+            _cache = cache;
         }
 
         public async Task<PaginatedResultDto> GetEventsAsync(EventFilterDto filter)
@@ -29,6 +33,12 @@ namespace CourseProject.Events.Application.Services
 
         public async Task<EventDto?> GetEventByIdAsync(Guid id)
         {
+            var cachedEvent = await _cache.GetById(id);
+            if (cachedEvent != null)
+            {
+                return _eventDtoMapperService.EntityToDto(cachedEvent);
+            }
+
             var @event = await _eventRepository.GetByIdAsync(id);
 
             if (@event == null)
@@ -37,7 +47,30 @@ namespace CourseProject.Events.Application.Services
 
             }
 
+            await _cache.SetById(id, @event);
+
             return _eventDtoMapperService.EntityToDto(@event);
+        }
+
+        public async Task<List<TopEventDto>> GetTopEvents(int number)
+        {
+            var cachedEvent = await _cache.GetTop(number);
+            if (cachedEvent != null)
+            {
+                return cachedEvent.Select(o => _topEventDtoMapperService.EntityToDto(o)).ToList();
+            }
+
+            var events = await _eventRepository.GetTopEventsAsync(number);
+
+            if (events == null)
+            {
+                throw new EventNotFoundException();
+
+            }
+
+            await _cache.SetTop(number, events);
+
+            return events.Select(o => _topEventDtoMapperService.EntityToDto(o)).ToList();
         }
 
         public async Task<EventDto> CreateEventAsync(EventDto @event)
@@ -45,7 +78,11 @@ namespace CourseProject.Events.Application.Services
             ValidateEvent(@event);
             @event.AvailableSeats = @event.TotalSeats;
             @event.Id = Guid.NewGuid();
-            await _eventRepository.CreateAsync(_eventDtoMapperService.DtoToEntity(@event));
+
+            var entityEvent = _eventDtoMapperService.DtoToEntity(@event);
+            await _eventRepository.CreateAsync(entityEvent);
+            await _cache.SetById(@event.Id, entityEvent);
+
             return @event;
         }
 
@@ -79,6 +116,8 @@ namespace CourseProject.Events.Application.Services
 
             await _eventRepository.UpdateAsync(currentDbEvent);
 
+            await _cache.SetById(currentDbEvent.Id, currentDbEvent);
+
             return @event;
         }
 
@@ -88,7 +127,11 @@ namespace CourseProject.Events.Application.Services
             {
                 throw new InvalidEventDataException();
             }
-            return await _eventRepository.DeleteAsync((Guid)id);
+
+            var deleted = await _eventRepository.DeleteAsync((Guid)id);
+            await _cache.DeleteById((Guid)id);
+
+            return deleted;
         }
 
 

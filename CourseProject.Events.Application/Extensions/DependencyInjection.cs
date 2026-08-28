@@ -13,7 +13,7 @@ namespace CourseProject.Events.Application.Extensions
             services.AddSingleton<IEventDtoMapperService, EventDtoMapperService>();
             services.AddSingleton<IEventFilterDtoMapperService, EventFilterDtoMapperService>();
             services.AddSingleton<IPaginatedResultDtoMapperService, PaginatedResultDtoMapperService>();
-
+            services.AddSingleton<ITopEventDtoMapperService, TopEventDtoMapperService>();
 
             return services;
 

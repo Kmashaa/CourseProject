@@ -14,5 +14,6 @@ namespace CourseProject.Events.Application.Interfaces
 
         Task<bool> DeleteEventAsync(Guid? index);
 
+        Task<List<TopEventDto>> GetTopEvents(int number);
     }
 }
