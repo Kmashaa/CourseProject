@@ -1,11 +1,13 @@
 using CourseProject.Events.Application.Extensions;
-using CourseProject.Events.Presentation.Extensions;
 using CourseProject.Events.Infrastructure.DataAccess;
 using CourseProject.Events.Infrastructure.Extensions;
+using CourseProject.Events.Presentation.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Serilog;
+using Serilog.Formatting.Compact;
 using System.Reflection;
 using System.Text;
 
@@ -81,6 +83,10 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+builder.Host.UseSerilog((ctx, cfg) =>
+    cfg.ReadFrom.Configuration(ctx.Configuration)
+       .WriteTo.Console(new CompactJsonFormatter()));
 
 var app = builder.Build();
 
